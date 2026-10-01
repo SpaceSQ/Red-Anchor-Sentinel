@@ -1,0 +1,43 @@
+{
+  "name": "red-anchor-sentinel",
+  "version": "9.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "check": "node --experimental-strip-types --import ./scripts/register.mjs scripts/check.ts",
+    "tauri": "tauri",
+    "dev:desktop": "tauri dev",
+    "export:desktop": "node scripts/export-desktop.mjs",
+    "build:macos": "node scripts/desktop-build.mjs aarch64-apple-darwin",
+    "build:windows": "node scripts/desktop-build.mjs x86_64-pc-windows-msvc",
+    "build:android": "node scripts/android-stub.mjs",
+    "redanchor": "node server/redanchor-cli.mjs"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.12.1",
+    "@tauri-apps/plugin-dialog": "^2.8.1",
+    "echarts": "^5.6.0",
+    "echarts-for-react": "^3.0.2",
+    "framer-motion": "^11.18.2",
+    "multicast-dns": "^7.2.5",
+    "next": "^14.2.28",
+    "nodemailer": "^10.0.13",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.12.1",
+    "@types/node": "^22.15.3",
+    "@types/nodemailer": "^8.0.2",
+    "@types/react": "^18.3.20",
+    "@types/react-dom": "^18.3.6",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.8.3"
+  }
+}

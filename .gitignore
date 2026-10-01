@@ -1,0 +1,15 @@
+node_modules
+.next
+out
+data/*.json
+data/*.rasprofile
+cloud_backend.db
+data/vault
+*.tsbuildinfo
+.DS_Store
+src-tauri/target
+src-tauri/gen
+android
+.capacitor
+android-gateway.txt
+.api-stash
