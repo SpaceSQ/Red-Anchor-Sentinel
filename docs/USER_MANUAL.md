@@ -24,6 +24,40 @@
 
 云服务器和没有物理硬件的容器会显示“环境不兼容”，深度扫描和打补丁保持关闭。
 
+### 2.1 macOS：「已损坏，无法打开」
+
+**现象：** 在 macOS 上下载并打开 `.dmg` 或 `.app` 时，系统可能提示：「Red Anchor Sentinel 已损坏，无法打开。您应该将它移到废纸篓。」
+
+**原因：** 作为一款坚守本地物理底线的免费防御工具，红锚哨兵目前采用本地 Ad-hoc 签名，暂未接入苹果官方的付费公证（Notarization）网络。这是 macOS Gatekeeper 的默认隔离保护机制，并非文件真实损坏或携带病毒。客户端是免费软件，不是开源软件。
+
+**极客解锁方案（两步恢复物理主权）：**
+
+1. 将 `Red Anchor Sentinel.app` 拖入系统的「应用程序 (Applications)」文件夹。
+2. 打开系统自带的「终端 (Terminal)」，依次执行以下两行命令（按回车）：
+
+```bash
+xattr -cr "/Applications/Red Anchor Sentinel.app"
+codesign --force --deep --sign - "/Applications/Red Anchor Sentinel.app"
+```
+
+执行完毕后，即可从启动台正常打开红锚哨兵。
+
+**Symptom:** When opening the app on macOS, you might see: "Red Anchor Sentinel is damaged and can't be opened. You should move it to the Trash."
+
+**Cause:** As a freeware physical-layer defense tool, RAS currently uses an ad-hoc signature and bypasses Apple's paid Notarization process. This triggers macOS Gatekeeper's quarantine mechanism. The file is not actually damaged or malicious.
+
+**Geek Unlock Solution:**
+
+1. Move `Red Anchor Sentinel.app` into your Applications folder.
+2. Open the Terminal app and execute the following two commands:
+
+```bash
+xattr -cr "/Applications/Red Anchor Sentinel.app"
+codesign --force --deep --sign - "/Applications/Red Anchor Sentinel.app"
+```
+
+Once completed, you can launch Red Anchor Sentinel normally.
+
 [Insert Screenshot Here]
 
 ## 3. 首次启动与邮箱核验
@@ -103,6 +137,8 @@
 [Insert Screenshot Here]
 
 ## 9. 故障排除
+
+macOS 提示应用已损坏？安装包没有坏。按第 2.1 节把应用放进「应用程序」，再执行那两行终端命令。
 
 为什么显示环境不兼容？程序认为自己跑在容器里，或不把这台机器当成完整物理主机。深度扫描和补丁会关闭。
 
