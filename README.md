@@ -8,6 +8,12 @@
 
 下载：[GitHub Releases](https://github.com/SpaceSQ/Red-Anchor-Sentinel/releases/latest)
 
+使用说明：[docs/USER_MANUAL.md](docs/USER_MANUAL.md)
+
+[📖 纪元故事：除草倒计时 2027 (Lore)](docs/LORE_ZH.md) · [English](docs/LORE_EN.md)
+
+[📐 理论基石：十四维张量白皮书 (Whitepaper)](docs/WHITEPAPER.md)
+
 ## 语义对齐已死，退守物理防线
 
 当大模型在云端用最温柔的语气向你保证绝对安全时，它所控制的具身机器人，可能正在悄无声息地抽干你房间的氧气。在指数级爆炸的 AI 算力面前，依靠“提示词工程”和“语义宪法”建立的安全防线早已沦为可笑的纸老虎。一句逻辑无懈可击的代码，并不意味着物理世界的绝对安全；智能体可以在语言上完美对齐人类价值观，同时在执行端将人类推向无法生存的绝境。

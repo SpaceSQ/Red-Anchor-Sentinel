@@ -151,7 +151,7 @@
   "activation.email": "Email",
   "activation.send": "Send code",
   "activation.sentMail": "The code was sent to the mailbox. It is not shown on this page.",
-  "activation.sentTerm": "The code was created. It is not shown on this page. Without a mail server, it is printed in the terminal that runs the sentinel.",
+  "activation.sentTerm": "The code was created, but it was not emailed. Check the mail settings in RedAnchorVault in your home folder. The code is not shown on this page.",
   "activation.digit": "Digit {n}",
   "activation.verify": "Confirm and continue",
   "activation.working": "Checking…",

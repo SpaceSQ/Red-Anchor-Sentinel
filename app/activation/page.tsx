@@ -5,7 +5,8 @@ import { useRef, useState } from "react";
 import { CommercialNote } from "@/components/CommercialNote";
 import { useI18n } from "@/lib/i18n";
 import { cacheActivation } from "@/lib/activation";
-import { fetchHardware, readCachedProfile } from "@/lib/host-client";
+import { hardNavigate, inDesktopShell } from "@/lib/desktop-nav";
+import { fetchHardware, postCloud, readCachedProfile, saveActivationRecord } from "@/lib/host-client";
 
 export default function ActivationPage() {
   const router = useRouter();
@@ -24,13 +25,7 @@ export default function ActivationPage() {
     setBusy(true);
     setError("");
     try {
-      const response = await fetch("/api/cloud/send-code", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, privacy }),
-      });
-      const data = (await response.json()) as { error?: string; delivery?: string };
-      if (!response.ok) throw new Error(data.error || "发码失败");
+      const data = await postCloud<{ delivery?: string }>("sendCode", { email, privacy });
       setDelivery(data.delivery || "terminal");
       setSent(true);
     } catch (reason) {
@@ -44,13 +39,7 @@ export default function ActivationPage() {
     setBusy(true);
     setError("");
     try {
-      const response = await fetch("/api/cloud/verify-code", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, username, code: digits.join(""), privacy }),
-      });
-      const data = (await response.json()) as { error?: string };
-      if (!response.ok) throw new Error(data.error || "核验失败");
+      await postCloud("verifyCode", { email, username, code: digits.join(""), privacy });
       const record = {
         activated: true as const,
         email: email.trim().toLowerCase(),
@@ -64,19 +53,13 @@ export default function ActivationPage() {
         entropy = "";
       }
       if (entropy) {
-        const saved = await fetch("/api/host", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ op: "saveActivation", dir: "~/RedAnchorVault", entropy, ...record }),
-        });
-        if (!saved.ok) {
-          const payload = (await saved.json()) as { error?: string };
-          throw new Error(payload.error || "金库写入失败");
-        }
+        await saveActivationRecord({ dir: "~/RedAnchorVault", entropy, ...record });
       }
       cacheActivation(record);
       window.localStorage.setItem("red-anchor-privacy", "1");
-      router.replace(readCachedProfile() ? "/" : "/setup");
+      const next = readCachedProfile() ? "/" : "/setup";
+      if (inDesktopShell()) hardNavigate(next);
+      else router.replace(next);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "核验失败");
     } finally {

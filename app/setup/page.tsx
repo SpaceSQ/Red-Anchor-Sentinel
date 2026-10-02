@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { isValidDid, isValidU6a } from "@/lib/did";
 import { CommercialNote } from "@/components/CommercialNote";
 import { readActivation } from "@/lib/activation";
+import { hardNavigate, inDesktopShell } from "@/lib/desktop-nav";
 import { fetchHardware, probeLlm, saveVault } from "@/lib/host-client";
 import { useI18n } from "@/lib/i18n";
 import { didFromEntropy, formatU6a, type AddressParts, type SentinelProfile } from "@/lib/profile";
@@ -94,7 +95,8 @@ export default function SetupPage() {
           body: JSON.stringify({ email: activation.email, s2Did: did }),
         }).catch(() => undefined);
       }
-      router.replace("/");
+      if (inDesktopShell()) hardNavigate("/");
+      else router.replace("/");
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "setup.vaultFail");
     } finally {

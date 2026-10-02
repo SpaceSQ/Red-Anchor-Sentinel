@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useLabSkin } from "@/components/LabTheme";
+import { labCall } from "@/lib/lab-client";
 
 export function SentinelSeal() {
   const { profile } = useLabSkin();
@@ -18,11 +19,7 @@ export function SentinelSeal() {
       document.title = "红锚哨兵";
       delete document.body.dataset.lab;
       document.body.style.removeProperty("--lab-accent");
-      void fetch("/api/lab", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "clear" }),
-      });
+      void labCall("clear").catch(() => undefined);
     };
     const check = () => {
       if (!document.body.contains(node)) {

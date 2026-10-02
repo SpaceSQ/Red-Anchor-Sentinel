@@ -1,6 +1,6 @@
 # 红锚哨兵用户使用说明书
 
-版本 4.0 · 免费体验版
+版本 9.1.0 · 免费体验版
 
 ## 1. 产品简介与声明
 
@@ -12,15 +12,13 @@
 
 商业合作请联系：smarthomemiles@gmail.com
 
-[Insert Screenshot Here]
-
 ## 2. 下载与安装
 
-桌面版才是完整值守主机。
+桌面版才是完整值守主机。请从 [GitHub Releases](https://github.com/SpaceSQ/Red-Anchor-Sentinel/releases/latest) 下载，不要自行改安装包里的文件。
 
-- Windows：安装包为 `.exe` 或 `.msi`。需要在有 Rust 与 Windows 构建目标的机器上执行 `npm run build:windows`。
-- macOS：安装包为 `.dmg` 或 `.app`。在苹果芯片上执行 `npm run build:macos`。没有 Rust 时，脚本会停止，不会伪造安装包。
-- Android：`.apk` 只做查看和控制面板。界面写明：移动端非完整物理主机，深度扫描与补丁注入受限，请使用 PC 端进行 L0 级防御。
+- Windows：下载 `.msi` 或 `.exe`，按安装向导完成。驻留扫描、金库、邮箱核验和实验室需要本机已安装 Node.js 22 或更新版本。
+- macOS：下载 `.dmg`，把 `Red Anchor Sentinel.app` 拖进「应用程序」。若系统提示已损坏，按 2.1 节处理。同样需要 Node.js 22 或更新版本。
+- Linux：下载 `.deb` 后用系统安装器安装，或下载 `.AppImage` 后赋予执行权限再打开。同样需要 Node.js 22 或更新版本。
 
 云服务器和没有物理硬件的容器会显示“环境不兼容”，深度扫描和打补丁保持关闭。
 
@@ -58,22 +56,20 @@ codesign --force --deep --sign - "/Applications/Red Anchor Sentinel.app"
 
 Once completed, you can launch Red Anchor Sentinel normally.
 
-[Insert Screenshot Here]
-
 ## 3. 首次启动与邮箱核验
 
 安装后第一次打开，会先进入邮箱核验，而不是创世向导。
 
 1. 填写用户名。它只做本机称呼，不检查是否和别人重复。
-2. 填写邮箱，点“获取核验码”。
-3. 测试安装会把 6 位数字打在运行程序的终端里，页面上不显示这串数字。
-4. 把数字填进 6 个格子。
+2. 填写邮箱，勾选隐私说明，点“获取核验码”。
+3. 六位核验码发到该邮箱，页面上不显示。10 分钟内有效。
+4. 把数字填进 6 个格子，点“确认并进入创世”。
 5. 通过后，核验记录写入主目录下 `RedAnchorVault/activation.vault`，并用本机硬件熵做 AES-256-GCM 加密。
 6. 尚未创世时进入三步向导；已经创世则直接进入雷达。
 
-核验码错误可以重试，也可以改邮箱再要一次。
+发信读取你主目录里的 `RedAnchorVault/.env`。公开下载的安装包不含邮箱密码。需要这几行：`SMTP_HOST`、`SMTP_PORT`、`SMTP_USER`、`SMTP_PASS`。发件人必须与 `SMTP_USER` 相同。端口 465 走加密；25 和 80 走非加密。密码是邮件服务里为这个发信地址单独设置的 SMTP 密码。
 
-[Insert Screenshot Here]
+核验码错误可以重试，也可以改邮箱再要一次。
 
 ## 4. 实体对齐与创世配置
 
@@ -84,8 +80,6 @@ Once completed, you can launch Red Anchor Sentinel normally.
 3. 推理端点默认是本机 Ollama，`http://127.0.0.1:11434`。也可以改成 OpenAI 兼容地址。密钥只进加密金库。
 
 容器里不能做深度安装，只能走受限预览。
-
-[Insert Screenshot Here]
 
 ## 5. 全域雷达与三级扫描
 
@@ -99,8 +93,6 @@ Once completed, you can launch Red Anchor Sentinel normally.
 
 首页有一句话说明，避免只看钢印和圈层代号。
 
-[Insert Screenshot Here]
-
 ## 6. 双轨十四维与时序覆写
 
 有传感器或配置读数，而且数值离开了地球生活基线时，面板画精确折线。
@@ -113,8 +105,6 @@ Once completed, you can launch Red Anchor Sentinel normally.
 
 这也可以当成家庭资源备忘：洗衣机对应用水上升，冷链到货对应食物储备上升。
 
-[Insert Screenshot Here]
-
 ## 7. 安全补丁
 
 1. 点一个光点，打开指挥台。
@@ -125,18 +115,22 @@ Once completed, you can launch Red Anchor Sentinel normally.
 
 一键标记隔离只处理没有金印的信号，而且只写本机账本。
 
-[Insert Screenshot Here]
+## 8. 红锚实验室
 
-## 8. 导出与个性化
+实验室在导航里。探测体是一份本机档案，用来更换标题、颜色和更严格的警告线。它不是新的可执行文件。扫描、账本和补丁仍由红锚哨兵执行。
+
+档案放在主目录 `RedAnchorVault/lab/`。
+
+你可以做的只有把警告收紧：声音、氧气、温度，以及一段补充提示。不能把缺氧标成安全，不能把氧气警告降到 19.5% 以下，不能放宽 5 牛顿触觉熔断，不能关闭三条铁律，也不能藏起底栏的 “Powered by Red Anchor Sentinel”。遮住水印的皮肤会被丢掉，界面回到红锚哨兵。
+
+## 9. 导出与个性化
 
 - CSV、JSON：给硬件测试留档，导出前去掉地址和邮箱。
 - PDF 摘要：一页计数，用英文和数字，避免普通字体写不出中文。屏幕上的统计板仍是中文。
 - 极客反馈：写下建议并下载脱敏 JSON。软件不会自动把日志寄出。若要联系合作，使用说明书首页的邮箱。
 - 高级设置：附加推理提示、自动体检间隔、锚红 / 警戒黄 / 安全绿。
 
-[Insert Screenshot Here]
-
-## 9. 故障排除
+## 10. 故障排除
 
 macOS 提示应用已损坏？安装包没有坏。按第 2.1 节把应用放进「应用程序」，再执行那两行终端命令。
 
@@ -144,10 +138,12 @@ macOS 提示应用已损坏？安装包没有坏。按第 2.1 节把应用放进
 
 局域网里一个设备都没有？哨兵只读多播应答和本机已经有的邻居缓存，不会扫整个网段。对方没有开发现服务时，雷达上可以是空的。
 
-核验码收不到？体验版把验证码打在启动程序的终端，不经真实邮箱发出。
+核验码收不到？先看垃圾箱。页面不会显示核验码。若提示发信账号未配置完整，把 `SMTP_HOST`、`SMTP_PORT`、`SMTP_USER`、`SMTP_PASS` 写进主目录 `RedAnchorVault/.env`。发信地址要和邮箱服务里登记的地址一致，密码用该地址的 SMTP 密码。本机还需要能运行 Node.js。
+
+点「创建新探测体」出现英文 “The string did not match the expected pattern.”？那是实验室接口没有返回档案。9.1.0 起探测体改存在本机 `RedAnchorVault/lab/`。请安装这一版后再创建。
 
 模型推演失败？先在本机启动 Ollama，并确认创世时的地址是 `http://127.0.0.1:11434`。
 
 金库写入被拒绝？目录必须在你的用户主目录里面。
 
-[Insert Screenshot Here]
+驻留命令提示需要 Node？从 nodejs.org 安装 Node.js 22 或更新版本，然后重新打开红锚哨兵。

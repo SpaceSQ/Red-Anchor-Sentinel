@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { CloudNav } from "@/components/CloudNav";
 import { LAWS } from "@/lib/did";
+import { labCall } from "@/lib/lab-client";
 import { EMPTY_RULES, strengthOf, type LabProfile, type LabRules } from "@/lib/lab-rules";
 
 export default function LabPage() {
@@ -13,8 +14,7 @@ export default function LabPage() {
   const [busy, setBusy] = useState(false);
 
   async function load() {
-    const response = await fetch("/api/lab");
-    const data = (await response.json()) as { profiles: LabProfile[]; activeId: string };
+    const data = await labCall<{ profiles: LabProfile[]; activeId: string }>("list");
     setProfiles(data.profiles || []);
     setActiveId(data.activeId || "");
   }
@@ -27,13 +27,8 @@ export default function LabPage() {
     setBusy(true);
     setError("");
     try {
-      const response = await fetch("/api/lab", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "create", customName: "未命名探测体" }),
-      });
-      const data = (await response.json()) as { profile?: LabProfile; error?: string };
-      if (!response.ok || !data.profile) throw new Error(data.error || "没有创建");
+      const data = await labCall<{ profile?: LabProfile }>("create", { customName: "未命名探测体" });
+      if (!data.profile) throw new Error("没有创建");
       setEditing(data.profile);
       await load();
     } catch (reason) {
@@ -47,13 +42,8 @@ export default function LabPage() {
     setBusy(true);
     setError("");
     try {
-      const response = await fetch("/api/lab", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "save", profile }),
-      });
-      const data = (await response.json()) as { profile?: LabProfile; error?: string };
-      if (!response.ok || !data.profile) throw new Error(data.error || "没有保存");
+      const data = await labCall<{ profile?: LabProfile }>("save", { profile });
+      if (!data.profile) throw new Error("没有保存");
       setEditing(data.profile);
       await load();
       return true;
@@ -70,13 +60,8 @@ export default function LabPage() {
     if (!saved) return;
     setBusy(true);
     try {
-      const response = await fetch("/api/lab", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "publish", id: profile.id }),
-      });
-      const data = (await response.json()) as { pack?: string; error?: string; profile?: LabProfile };
-      if (!response.ok || !data.pack || !data.profile) throw new Error(data.error || "没有发布");
+      const data = await labCall<{ pack?: string; profile?: LabProfile }>("publish", { id: profile.id });
+      if (!data.pack || !data.profile) throw new Error("没有发布");
       const blob = new Blob([data.pack], { type: "application/json" });
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
@@ -91,11 +76,7 @@ export default function LabPage() {
   }
 
   async function clearSkin() {
-    await fetch("/api/lab", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "clear" }),
-    });
+    await labCall("clear");
     window.location.reload();
   }
 

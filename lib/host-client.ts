@@ -57,6 +57,24 @@ export function cacheProfile(profile: SentinelProfile) {
   window.localStorage.setItem(PROFILE_KEY, JSON.stringify(stored));
 }
 
+export async function saveActivationRecord(body: Record<string, unknown>) {
+  return host<{ ok: boolean }>("saveActivation", body);
+}
+
+export async function postCloud<T>(op: "sendCode" | "verifyCode", body: Record<string, unknown>): Promise<T> {
+  const tauri = await tauriHost<T>(op, body);
+  if (tauri) return tauri;
+  const path = op === "sendCode" ? "/api/cloud/send-code" : "/api/cloud/verify-code";
+  const response = await fetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const data = (await response.json()) as T & { error?: string };
+  if (!response.ok) throw new Error(data.error || "母港没有完成这次请求");
+  return data;
+}
+
 export async function fetchHardware(): Promise<HardwareProfile> {
   return host<HardwareProfile>("hardware");
 }

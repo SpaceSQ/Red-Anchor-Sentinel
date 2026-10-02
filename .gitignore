@@ -13,3 +13,4 @@ android
 .capacitor
 android-gateway.txt
 .api-stash
+.env

@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
+import { labCall } from "@/lib/lab-client";
 import type { LabProfile, LabRules } from "@/lib/lab-rules";
 
 const LabContext = createContext<{ profile: LabProfile | null; rules: LabRules | null }>({ profile: null, rules: null });
@@ -14,9 +15,8 @@ export function LabTheme({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let stop = false;
-    fetch("/api/lab?view=active")
-      .then((response) => response.json())
-      .then((data: { profile?: LabProfile | null }) => {
+    labCall<{ profile?: LabProfile | null }>("active")
+      .then((data) => {
         if (!stop) setProfile(data.profile || null);
       })
       .catch(() => undefined);

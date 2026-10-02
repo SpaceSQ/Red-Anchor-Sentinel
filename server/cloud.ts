@@ -126,6 +126,43 @@ function releaseRow(): { latest_version: string; download_url: string } {
   };
 }
 
+function smtpEnv(name: string): string {
+  return (process.env[name] || "").trim();
+}
+
+function activationLetter(code: string): { subject: string; text: string; html: string } {
+  const subject = "[Red Anchor Sentinel] Your S2-DID Activation Code / 您的创世核验码";
+  const text = [
+    "Welcome to Red Anchor Sentinel. Your physical failsafe activation code is: " + code + ".",
+    "This code will expire in 10 minutes. If you did not request this, please ignore.",
+    "",
+    "欢迎来到红锚哨兵。你的物理熔断核验码是：" + code + "。",
+    "此码 10 分钟内有效。如果这不是你本人申请的，请忽略本信。",
+  ].join("\n");
+  const html = `<!DOCTYPE html>
+<html lang="zh-CN">
+<body style="margin:0;background:#020617;color:#e2e8f0;font-family:Segoe UI,Helvetica,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#020617;padding:32px 12px;">
+    <tr><td align="center">
+      <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#070b14;border:1px solid #7f1d1d;">
+        <tr><td style="padding:22px 28px;border-bottom:1px solid #7f1d1d;">
+          <div style="color:#ef4444;font-size:12px;letter-spacing:0.22em;">RED ANCHOR SENTINEL</div>
+          <div style="margin-top:8px;color:#fecaca;font-size:22px;letter-spacing:0.04em;">S2-DID 创世核验</div>
+        </td></tr>
+        <tr><td style="padding:28px;line-height:1.65;font-size:15px;color:#e2e8f0;">
+          <p style="margin:0 0 16px;">Welcome to Red Anchor Sentinel. Your physical failsafe activation code is:</p>
+          <p style="margin:0 0 16px;text-align:center;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:34px;letter-spacing:0.38em;color:#fecaca;">${code}</p>
+          <p style="margin:0 0 18px;">This code will expire in 10 minutes. If you did not request this, please ignore.</p>
+          <p style="margin:0;color:#94a3b8;font-size:13px;">欢迎来到红锚哨兵。你的物理熔断核验码见上方，10 分钟内有效。如果这不是你本人申请的，请忽略本信。</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+  return { subject, text, html };
+}
+
 export async function sendCode(emailRaw: string, privacy: boolean): Promise<"smtp" | "ethereal" | "terminal"> {
   if (!privacy) throw new Error("请先勾选隐私与遥测协议");
   const email = emailOk(emailRaw);
@@ -135,20 +172,28 @@ export async function sendCode(emailRaw: string, privacy: boolean): Promise<"smt
     hashCode(email, code),
     Date.now() + 10 * 60 * 1000,
   );
-  const text = `红锚哨兵核验码：${code}\n10 分钟内有效。母港只保存邮箱、心跳和工单，不接收局域网扫描结果。`;
-  const host = process.env.SMTP_HOST || "";
+  const letter = activationLetter(code);
+  const host = smtpEnv("SMTP_HOST");
   if (host) {
+    const user = smtpEnv("SMTP_USER");
+    const pass = smtpEnv("SMTP_PASS");
+    if (!user || !pass) throw new Error("发信账号未配置完整");
+    const port = Number(smtpEnv("SMTP_PORT") || 465);
     const transport = nodemailer.createTransport({
       host,
-      port: Number(process.env.SMTP_PORT || 587),
-      secure: process.env.SMTP_SECURE === "1",
-      auth: process.env.SMTP_USER ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS || "" } : undefined,
+      port,
+      secure: port === 465 || smtpEnv("SMTP_SECURE") === "1",
+      auth: { user, pass },
+      connectionTimeout: 15000,
+      greetingTimeout: 15000,
+      socketTimeout: 20000,
     });
     await transport.sendMail({
-      from: process.env.SMTP_FROM || process.env.SMTP_USER || "sentinel@localhost",
+      from: `"Red Anchor Sentinel" <${user}>`,
       to: email,
-      subject: "红锚哨兵核验码",
-      text,
+      subject: letter.subject,
+      text: letter.text,
+      html: letter.html,
     });
     return "smtp";
   }
@@ -166,8 +211,9 @@ export async function sendCode(emailRaw: string, privacy: boolean): Promise<"smt
     const info = await transport.sendMail({
       from: "Red Anchor Sentinel <sentinel@ethereal.email>",
       to: email,
-      subject: "红锚哨兵核验码",
-      text,
+      subject: letter.subject,
+      text: letter.text,
+      html: letter.html,
     });
     const preview = nodemailer.getTestMessageUrl(info);
     console.log(`[red-anchor] 核验信预览 ${email} ${preview || ""}`);

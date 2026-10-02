@@ -151,7 +151,7 @@
   "activation.email": "电子邮箱",
   "activation.send": "获取核验码",
   "activation.sentMail": "核验码已发到邮箱，页面上不会显示。",
-  "activation.sentTerm": "核验码已生成。页面上不会显示；未配置发信时，它打印在运行哨兵的终端里。",
+  "activation.sentTerm": "核验码已生成，但没有从邮箱发出。请检查主目录 RedAnchorVault 里的发信配置。页面上不会显示核验码。",
   "activation.digit": "第 {n} 位",
   "activation.verify": "确认并进入创世",
   "activation.working": "核验中…",
