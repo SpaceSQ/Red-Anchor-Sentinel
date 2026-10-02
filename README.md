@@ -10,6 +10,8 @@
 
 使用说明：[docs/USER_MANUAL.md](docs/USER_MANUAL.md)
 
+免费软件使用声明：[docs/FREEWARE_NOTICE.md](docs/FREEWARE_NOTICE.md) · [网站声明](http://www.robot0.com/RAS/legal.html)
+
 [📖 纪元故事：除草倒计时 2027 (Lore)](docs/LORE_ZH.md) · [English](docs/LORE_EN.md)
 
 [📐 理论基石：十四维张量白皮书 (Whitepaper)](docs/WHITEPAPER.md)

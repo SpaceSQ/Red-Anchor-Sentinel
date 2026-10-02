@@ -8,7 +8,7 @@
 
 补丁正文写进你指定的本地金库，不改别人的进程内存，也不把账本当成公链。
 
-当前为免费体验版本，未来可能推出商业收费版。本软件是免费软件，不是开源软件。
+当前为免费软件，闭源分发。家庭个人用户和企业用户的使用边界，见第 11 节《免费软件使用声明》。
 
 商业合作请联系：smarthomemiles@gmail.com
 
@@ -147,3 +147,65 @@ macOS 提示应用已损坏？安装包没有坏。按第 2.1 节把应用放进
 金库写入被拒绝？目录必须在你的用户主目录里面。
 
 驻留命令提示需要 Node？从 nodejs.org 安装 Node.js 22 或更新版本，然后重新打开红锚哨兵。
+
+## 11. 免费软件使用声明
+
+生效日期：2026年10月2日。权利人：广州零号软件科技有限公司（ROBOTZERO）。下载、安装或使用红锚哨兵，即表示接受本声明。网站同文：<http://www.robot0.com/RAS/legal.html>。
+
+### 11.1 软件性质
+
+红锚哨兵以免费软件（freeware）方式提供，采用闭源分发。本声明授予使用许可，不转让著作权，也不是开源许可证。
+
+### 11.2 谁可以使用
+
+家庭个人用户和企业用户都可以使用。
+
+权利人授予一项免费、非独占、不可转让、不可再许可的许可：用户可以在自有或合法控制的主机设备上下载、安装和使用本软件。企业用户可以在本企业的自有主机上，供内部人员进行上述使用。
+
+### 11.3 与开发者沟通
+
+用户可以通过软件内部的信息渠道与开发者沟通，包括软件内的反馈、工单，以及邮箱核验所使用的联系路径。该沟通只用于联络，不构成发布、转售或再许可。
+
+### 11.4 不得出售
+
+用户不得实施下列行为：
+
+1. 将本软件直接出售给第三方。
+2. 对本软件进行编辑、修改、改编、拆分或重新包装后，出售给第三方。
+3. 将本软件作为其他软件的关联产品、附属产品、捆绑组件或增值模块，与其他软件共同出售给第三方。
+
+无论是否另外收费、是否更改名称、是否把安装或部署服务写成交易的主要部分，只要本软件被当作交给第三方的成交内容，即属于出售。
+
+### 11.5 权利保留
+
+本软件的著作权及一切未在本声明中明确授予的权利，仍归广州零号软件科技有限公司所有。
+
+### 11.6 按现状提供
+
+按照免费软件的通行惯例，本软件按现状提供。在适用法律允许的最大范围内，权利人不就适销性、特定用途适用性或不侵犯第三方权利作出担保，也不对因使用或无法使用本软件而产生的损害承担责任。
+
+### 11.7 许可终止
+
+违反本声明时，使用许可自动终止。终止后应停止使用，并从相关主机上删除本软件的副本。
+
+### 11.8 联系
+
+smarthomemiles@gmail.com
+
+### 11.9 English notice
+
+Effective date: 2 October 2026. Rights holder: Guangzhou Zero Software Technology Co., Ltd. (ROBOTZERO). Downloading, installing, or using Red Anchor Sentinel means this notice is accepted.
+
+Red Anchor Sentinel is freeware and is distributed closed-source. This notice grants a right to use it. It does not transfer copyright, and it is not an open-source license.
+
+Household users and enterprise users may both use it. The license is free, non-exclusive, non-transferable, and non-sublicensable: download, install, and use the software on host devices the user owns or lawfully controls. An enterprise may do so on hosts it owns, for its own personnel.
+
+A user may communicate with the developer through the information channels inside the software, including in-software feedback, tickets, and the contact path used for email verification. That communication is for contact only.
+
+A user may not sell the software directly to a third party; edit, modify, adapt, split, or repackage it and then sell that result; or sell it together with other software as an associated product, accessory, bundle, or add-on module. This applies whether or not a separate fee is charged, whether or not the name is changed, and whether or not installation is described as the main part of the deal, whenever the software is part of what is delivered to a third party.
+
+Copyright, and every right not expressly granted here, remains with Guangzhou Zero Software Technology Co., Ltd. The software is provided as is. To the maximum extent permitted by applicable law, there is no warranty of merchantability, fitness for a particular purpose, or non-infringement, and no liability for damage arising from use or inability to use the software.
+
+The license ends automatically if this notice is breached. Use must then stop, and copies must be removed from the hosts concerned.
+
+Contact: smarthomemiles@gmail.com
