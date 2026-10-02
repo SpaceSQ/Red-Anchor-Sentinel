@@ -16,7 +16,7 @@ jobs:
         include:
           - os: macos-latest
             bundles: app,dmg
-          - os: windows-latest
+          - os: windows-2022
             bundles: msi,nsis
           - os: ubuntu-latest
             bundles: deb,appimage
@@ -41,4 +41,5 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: Red Anchor Sentinel ${{ github.ref_name }}
           releaseBody: Freeware desktop builds for this tag. macOS produces .app and .dmg, Windows produces .msi and .exe, Linux produces .deb and .AppImage.
+          tauriScript: node scripts/tauri-ci.mjs
           args: --bundles ${{ matrix.bundles }}
