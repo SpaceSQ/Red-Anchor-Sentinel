@@ -12,7 +12,7 @@ try {
   code = await new Promise((resolve, reject) => {
     const child = spawn(process.execPath, [nextBin, "build"], {
       stdio: "inherit",
-      env: { ...process.env, TAURI_BUILD: "1" },
+      env: { ...process.env, TAURI_BUILD: "1", NEXT_TELEMETRY_DISABLED: "1" },
     });
     child.on("error", reject);
     child.on("exit", (status) => resolve(status ?? 1));
@@ -20,4 +20,5 @@ try {
 } finally {
   await rename(stash, api);
 }
+console.error(`RAS_EXPORT_CODE=${code}`);
 if (code !== 0) process.exit(code);

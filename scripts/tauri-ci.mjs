@@ -19,10 +19,16 @@ const code = await new Promise((resolve, reject) => {
 });
 
 if (code !== 0) {
-  const lines = Buffer.concat(chunks).toString("utf8").split(/\r?\n/).filter(Boolean).slice(-30);
-  for (const line of lines) {
-    const safe = line.replace(/%/g, "%25").replace(/\r/g, "%0D").replace(/\n/g, "%0A");
-    console.log(`::error::${safe}`);
-  }
+  const lines = Buffer.concat(chunks)
+    .toString("utf8")
+    .split(/\r?\n/)
+    .map((line) => line.replace(/\u001b\[[0-9;]*m/g, "").trim())
+    .filter(Boolean);
+  const interesting = lines.filter((line) =>
+    /error|failed|not found|enoent|eperm|einval|panicked|RAS_EXPORT_CODE|unable to|cannot |can't /i.test(line),
+  );
+  const picked = (interesting.length ? interesting : lines.slice(-8)).slice(-8);
+  const message = picked.join(" || ").replace(/::/g, ":").slice(0, 2000);
+  console.log(`::error::${message}`);
   process.exit(code);
 }
