@@ -1,6 +1,6 @@
 [package]
 name = "red-anchor-sentinel"
-version = "9.1.2"
+version = "9.1.3"
 edition = "2021"
 description = "Red Anchor Sentinel desktop shell"
 
