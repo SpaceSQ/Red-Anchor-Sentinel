@@ -136,14 +136,14 @@ For an enterprise safety board or a hardware-level API, write to [smarthomemiles
 
 ## 界面截图
 
-![雷达主页](docs/screenshots/radar.png)
+雷达主界面。健康检查、临界读数，以及本机、局域网、云端三圈。
 
-![十四维](docs/screenshots/dimensions.png)
+![雷达主界面](docs/screenshots/radar.png)
 
-![落地页](docs/screenshots/landing.png)
+十四维干预偏移。光、空气、声音、电磁波、电源、视觉、基气、气压、气味、触觉、地磁、重力、供水与营养。
 
-上面三张图仍是占位路径。请从正在运行的哨兵里截图，保存为：
+![十四维干预偏移](docs/screenshots/dimensions.png)
 
-- [ ] `docs/screenshots/radar.png` — 雷达主界面
-- [ ] `docs/screenshots/dimensions.png` — 十四维面板
-- [ ] `docs/screenshots/landing.png` — 落地页或创世向导
+高级设置。可附加推理提示，并在锚红、警戒黄、安全绿之间切换。
+
+![高级设置](docs/screenshots/landing.png)
