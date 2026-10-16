@@ -1,11 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { CopyrightNote } from "@/components/CopyrightNote";
 import { useLabSkin } from "@/components/LabTheme";
 import { labCall } from "@/lib/lab-client";
+import { useI18n } from "@/lib/i18n";
 
 export function SentinelSeal() {
   const { profile } = useLabSkin();
+  const { t } = useI18n();
   const [notice, setNotice] = useState("");
 
   useEffect(() => {
@@ -15,8 +18,8 @@ export function SentinelSeal() {
     const fallback = () => {
       if (tripped) return;
       tripped = true;
-      setNotice("衍生体试图遮住水印，已回到红锚哨兵。");
-      document.title = "红锚哨兵";
+      setNotice(t("seal.blocked"));
+      document.title = t("app.title");
       delete document.body.dataset.lab;
       document.body.style.removeProperty("--lab-accent");
       void labCall("clear").catch(() => undefined);
@@ -41,16 +44,22 @@ export function SentinelSeal() {
       observer.disconnect();
       window.clearInterval(timer);
     };
-  }, []);
+  }, [t]);
 
   return (
     <footer
       id="red-anchor-seal"
       style={{ display: "flex", opacity: 1, visibility: "visible", position: "fixed", zIndex: 80, background: "#020617", color: "#fecaca" }}
-      className="inset-x-0 bottom-0 h-9 items-center justify-between border-t border-red-900 px-3 text-xs"
+      className="inset-x-0 bottom-0 flex-col justify-center gap-1 border-t border-red-900 px-3 py-2 text-xs"
     >
-      <span>{notice || profile?.customName || "红锚哨兵"}</span>
-      <span style={{ color: "#ef4444" }}>Powered by Red Anchor Sentinel</span>
+      <div className="flex w-full items-center justify-between gap-3">
+        <span>{notice || profile?.customName || t("app.name")} · {t("app.role")}</span>
+        <span style={{ color: "#ef4444" }}>Powered by Red Anchor Sentinel</span>
+      </div>
+      <div className="flex w-full flex-wrap items-center justify-between gap-2 text-slate-400">
+        <span>{t("geo.note")}</span>
+        <CopyrightNote />
+      </div>
     </footer>
   );
 }

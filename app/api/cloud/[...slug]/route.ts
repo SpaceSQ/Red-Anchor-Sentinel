@@ -19,6 +19,8 @@ import {
   verifyCode,
   adminToken,
 } from "@/server/cloud";
+import { confirmEmail, confirmReset, loginAccount, registerAccount, resetPassword } from "@/server/accounts.mjs";
+import { sendResetCode } from "@/server/activation-mail.mjs";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -37,12 +39,30 @@ export async function POST(request: Request, context: { params: { slug: string[]
   try {
     const body = (await request.json()) as Record<string, unknown>;
     if (name === "send-code") {
-      const delivery = await sendCode(String(body.email || ""), body.privacy === true);
+      const delivery = await sendCode(String(body.email || ""), body.privacy === true, body.locale);
       return NextResponse.json({ ok: true, delivery });
     }
     if (name === "verify-code") {
       const user = verifyCode(String(body.email || ""), String(body.code || ""), String(body.username || ""), body.privacy === true);
       return NextResponse.json({ ok: true, ...user });
+    }
+    if (name === "confirm-email") {
+      return NextResponse.json(confirmEmail(body));
+    }
+    if (name === "register") {
+      return NextResponse.json(registerAccount(body));
+    }
+    if (name === "login") {
+      return NextResponse.json(loginAccount(body));
+    }
+    if (name === "reset-code") {
+      return NextResponse.json(await sendResetCode(body));
+    }
+    if (name === "confirm-reset") {
+      return NextResponse.json(confirmReset(body));
+    }
+    if (name === "reset-password") {
+      return NextResponse.json(resetPassword(body));
     }
     if (name === "bind-did") {
       bindDid(String(body.email || ""), String(body.s2Did || ""));

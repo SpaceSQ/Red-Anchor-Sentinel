@@ -16,7 +16,7 @@ interface I18nValue {
 }
 
 const I18nContext = createContext<I18nValue>({
-  lang: "zh",
+  lang: "en",
   setLang: () => undefined,
   t: (key) => key,
 });
@@ -27,7 +27,7 @@ function fill(template: string, vars?: Record<string, string | number>): string 
 }
 
 export function I18nProvider({ children }: { children: React.ReactNode }) {
-  const [lang, setLangState] = useState<Lang>("zh");
+  const [lang, setLangState] = useState<Lang>("en");
 
   const apply = useCallback((next: Lang) => {
     setLangState(next);
@@ -45,7 +45,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   }, [apply]);
 
   const t = useCallback(
-    (key: string, vars?: Record<string, string | number>) => fill(DICTS[lang][key] || DICTS.zh[key] || key, vars),
+    (key: string, vars?: Record<string, string | number>) => fill(DICTS[lang][key] || DICTS.en[key] || key, vars),
     [lang],
   );
 

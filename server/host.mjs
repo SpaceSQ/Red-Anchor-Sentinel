@@ -7,6 +7,9 @@ import path from "node:path";
 import { promisify } from "node:util";
 import { askAlign, checkClamp, readCard } from "./ask.mjs";
 import { scanAnnouncements } from "./discover.mjs";
+import { ensureRunning } from "./link.mjs";
+import { activeSigns, rsiPromote, rsiPropose, rsiProposeMany, rsiStatus } from "./rsi.mjs";
+import { assessWorm, draftFromListeners, parseEstablished, parseListeners, parseTasklist } from "./worm-sign.mjs";
 
 const execFileAsync = promisify(execFile);
 const require = createRequire(import.meta.url);
@@ -193,22 +196,20 @@ function pushHit(hits, hit) {
 }
 
 async function scanLocal(hits) {
-  const listeners = await run("lsof", ["-nP", "-iTCP", "-sTCP:LISTEN"]);
-  for (const line of listeners.split("\n")) {
-    const match = line.match(/^(\S+)\s+(\d+)\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+:(\d+)\s/);
-    if (!match) continue;
-    const port = Number(match[3]);
+  const listeners = parseListeners(await run("lsof", ["-nP", "-iTCP", "-sTCP:LISTEN"]));
+  for (const row of listeners) {
+    const port = Number(row.port);
     const known = AI_PORTS[port];
     if (!known) continue;
     pushHit(hits, {
-      id: `local-${match[2]}-${port}`,
+      id: `local-${row.pid}-${port}`,
       tier: 1,
       name: known[0],
       vendor: known[0],
       purpose: known[1],
       uptimeSec: 0,
-      address: `127.0.0.1:${port}`,
-      manifest: [`tcp:${port}`, `process:${match[1]}`],
+      address: `${row.bind}:${port}`,
+      manifest: [`tcp:${port}`, `process:${row.name}`],
       note: "本机监听端口。只记录进程名与端口，不读取内存。",
       patchAuthority: "full",
     });
@@ -328,9 +329,24 @@ export async function scanTiers() {
   return { hits, scannedAt: new Date().toISOString() };
 }
 
+export async function watchWorm() {
+  const listeners = parseListeners(await run("lsof", ["-nP", "-iTCP", "-sTCP:LISTEN"]));
+  const established = parseEstablished(await run("lsof", ["-nP", "-iTCP", "-sTCP:ESTABLISHED"]));
+  let processes = (await run("ps", ["-ax", "-o", "comm="])).split("\n").map((line) => line.trim()).filter(Boolean);
+  if (processes.length === 0) processes = parseTasklist(await run("tasklist", ["/FO", "CSV", "/NH"]));
+  const extra = activeSigns();
+  const report = assessWorm(listeners, established, extra, processes);
+  const drafts = rsiProposeMany(draftFromListeners(listeners, extra));
+  return { ...report, drafts, rsi: rsiStatus(), observedAt: new Date().toISOString() };
+}
+
 export async function dispatch(op, body) {
   if (op === "hardware") return hardwareProfile();
   if (op === "scan") return scanTiers();
+  if (op === "wormWatch") return watchWorm();
+  if (op === "rsiStatus") return rsiStatus();
+  if (op === "rsiPropose") return rsiPropose(body);
+  if (op === "rsiPromote") return rsiPromote(body);
   if (op === "saveActivation") return saveActivation(body);
   if (op === "saveVault") return saveVault(body);
   if (op === "loadVault") return loadVault(body);
@@ -339,5 +355,6 @@ export async function dispatch(op, body) {
   if (op === "askAlign") return askAlign(body);
   if (op === "readCard") return readCard(body);
   if (op === "checkClamp") return checkClamp(body);
+  if (op === "linkEnsure") return ensureRunning();
   throw new Error("未知操作");
 }

@@ -2,6 +2,7 @@ import { createHash, createHmac, randomBytes, randomInt, timingSafeEqual } from 
 import { DatabaseSync } from "node:sqlite";
 import path from "node:path";
 import nodemailer from "nodemailer";
+import { readSmtpEnv } from "@/lib/email";
 import { isValidDid } from "@/lib/did";
 
 const ADMIN_PASSWORD = process.env.REDANCHOR_ADMIN_PASSWORD || "anchor-fleet";
@@ -127,15 +128,53 @@ function releaseRow(): { latest_version: string; download_url: string } {
 }
 
 function smtpEnv(name: string): string {
-  return (process.env[name] || "").trim();
+  const file = readSmtpEnv();
+  const fromFile: Record<string, string> = {
+    SMTP_HOST: file.host,
+    SMTP_PORT: file.port,
+    SMTP_USER: file.user,
+    SMTP_PASS: file.pass,
+    SMTP_SECURE: file.secure,
+  };
+  return (process.env[name] || fromFile[name] || "").trim();
 }
 
-function activationLetter(code: string): { subject: string; text: string; html: string } {
-  const subject = "[Red Anchor Sentinel] Your S2-DID Activation Code / 您的创世核验码";
+export function activationMailLang(locale: unknown): "zh" | "en" {
+  return locale === "en" ? "en" : "zh";
+}
+
+export function activationLetter(code: string, locale?: unknown): { subject: string; text: string; html: string } {
+  const lang = activationMailLang(locale);
+  if (lang === "en") {
+    const subject = "[Red Anchor Sentinel] Your S2-DID Activation Code";
+    const text = [
+      "Welcome to Red Anchor Sentinel. Your physical failsafe activation code is: " + code + ".",
+      "This code will expire in 10 minutes. If you did not request this, please ignore.",
+    ].join("\n");
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<body style="margin:0;background:#020617;color:#e2e8f0;font-family:Segoe UI,Helvetica,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#020617;padding:32px 12px;">
+    <tr><td align="center">
+      <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#070b14;border:1px solid #7f1d1d;">
+        <tr><td style="padding:22px 28px;border-bottom:1px solid #7f1d1d;">
+          <div style="color:#ef4444;font-size:12px;letter-spacing:0.22em;">RED ANCHOR SENTINEL</div>
+          <div style="margin-top:8px;color:#fecaca;font-size:22px;letter-spacing:0.04em;">S2-DID Activation</div>
+        </td></tr>
+        <tr><td style="padding:28px;line-height:1.65;font-size:15px;color:#e2e8f0;">
+          <p style="margin:0 0 16px;">Welcome to Red Anchor Sentinel. Your physical failsafe activation code is:</p>
+          <p style="margin:0 0 16px;text-align:center;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:34px;letter-spacing:0.38em;color:#fecaca;">${code}</p>
+          <p style="margin:0;">This code will expire in 10 minutes. If you did not request this, please ignore.</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+    return { subject, text, html };
+  }
+  const subject = "[红锚哨兵] 您的 S2-DID 创世核验码";
   const text = [
-    "Welcome to Red Anchor Sentinel. Your physical failsafe activation code is: " + code + ".",
-    "This code will expire in 10 minutes. If you did not request this, please ignore.",
-    "",
     "欢迎来到红锚哨兵。你的物理熔断核验码是：" + code + "。",
     "此码 10 分钟内有效。如果这不是你本人申请的，请忽略本信。",
   ].join("\n");
@@ -146,14 +185,13 @@ function activationLetter(code: string): { subject: string; text: string; html: 
     <tr><td align="center">
       <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#070b14;border:1px solid #7f1d1d;">
         <tr><td style="padding:22px 28px;border-bottom:1px solid #7f1d1d;">
-          <div style="color:#ef4444;font-size:12px;letter-spacing:0.22em;">RED ANCHOR SENTINEL</div>
+          <div style="color:#ef4444;font-size:12px;letter-spacing:0.22em;">红锚哨兵</div>
           <div style="margin-top:8px;color:#fecaca;font-size:22px;letter-spacing:0.04em;">S2-DID 创世核验</div>
         </td></tr>
         <tr><td style="padding:28px;line-height:1.65;font-size:15px;color:#e2e8f0;">
-          <p style="margin:0 0 16px;">Welcome to Red Anchor Sentinel. Your physical failsafe activation code is:</p>
+          <p style="margin:0 0 16px;">欢迎来到红锚哨兵。你的物理熔断核验码是：</p>
           <p style="margin:0 0 16px;text-align:center;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:34px;letter-spacing:0.38em;color:#fecaca;">${code}</p>
-          <p style="margin:0 0 18px;">This code will expire in 10 minutes. If you did not request this, please ignore.</p>
-          <p style="margin:0;color:#94a3b8;font-size:13px;">欢迎来到红锚哨兵。你的物理熔断核验码见上方，10 分钟内有效。如果这不是你本人申请的，请忽略本信。</p>
+          <p style="margin:0;">此码 10 分钟内有效。如果这不是你本人申请的，请忽略本信。</p>
         </td></tr>
       </table>
     </td></tr>
@@ -163,38 +201,24 @@ function activationLetter(code: string): { subject: string; text: string; html: 
   return { subject, text, html };
 }
 
-export async function sendCode(emailRaw: string, privacy: boolean): Promise<"smtp" | "ethereal" | "terminal"> {
+export async function sendCode(emailRaw: string, privacy: boolean, locale?: unknown): Promise<"smtp" | "ethereal" | "terminal"> {
   if (!privacy) throw new Error("请先勾选隐私与遥测协议");
   const email = emailOk(emailRaw);
+  const { reserveActivationSend } = await import("@/server/activation-mail.mjs");
+  reserveActivationSend(email, locale);
   const code = String(randomInt(100000, 1000000));
   db.prepare("INSERT INTO codes (email, code_hash, expires_at) VALUES (?, ?, ?) ON CONFLICT(email) DO UPDATE SET code_hash = excluded.code_hash, expires_at = excluded.expires_at").run(
     email,
     hashCode(email, code),
     Date.now() + 10 * 60 * 1000,
   );
-  const letter = activationLetter(code);
+  const { storeSignupCode } = await import("@/server/accounts.mjs");
+  storeSignupCode(email, code);
+  const letter = activationLetter(code, locale);
   const host = smtpEnv("SMTP_HOST");
   if (host) {
-    const user = smtpEnv("SMTP_USER");
-    const pass = smtpEnv("SMTP_PASS");
-    if (!user || !pass) throw new Error("发信账号未配置完整");
-    const port = Number(smtpEnv("SMTP_PORT") || 465);
-    const transport = nodemailer.createTransport({
-      host,
-      port,
-      secure: port === 465 || smtpEnv("SMTP_SECURE") === "1",
-      auth: { user, pass },
-      connectionTimeout: 15000,
-      greetingTimeout: 15000,
-      socketTimeout: 20000,
-    });
-    await transport.sendMail({
-      from: `"Red Anchor Sentinel" <${user}>`,
-      to: email,
-      subject: letter.subject,
-      text: letter.text,
-      html: letter.html,
-    });
+    const { sendActivationCode } = await import("@/lib/email");
+    await sendActivationCode(email, code, locale);
     return "smtp";
   }
   try {

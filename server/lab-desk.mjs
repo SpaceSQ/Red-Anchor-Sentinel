@@ -122,6 +122,54 @@ function publishProfile(id) {
   return { profile, pack: JSON.stringify(pack, null, 2) };
 }
 
+const sidecarPath = path.join(dir, "link-rules.json");
+
+function emptyRules() {
+  return { soundDb: null, o2Percent: null, heatCelsius: null, semanticPrompt: "" };
+}
+
+function readSidecar() {
+  try {
+    return cleanRules(JSON.parse(readFileSync(sidecarPath, "utf8")));
+  } catch {
+    return emptyRules();
+  }
+}
+
+export function readActiveRules() {
+  const { profiles, activeId } = listProfiles();
+  const profile = profiles.find((item) => item.id === activeId);
+  if (profile?.rulesConfig) return cleanRules(profile.rulesConfig);
+  return readSidecar();
+}
+
+export function tightenActiveRules(patch) {
+  const current = readActiveRules();
+  const sound = patch?.soundDb == null || patch.soundDb === "" ? current.soundDb : Number(patch.soundDb);
+  const oxygen = patch?.o2Percent == null || patch.o2Percent === "" ? current.o2Percent : Number(patch.o2Percent);
+  const heat = patch?.heatCelsius == null || patch.heatCelsius === "" ? current.heatCelsius : Number(patch.heatCelsius);
+  if (sound != null && current.soundDb != null && sound > current.soundDb) throw new Error("声音线只能收紧，不能放宽");
+  if (oxygen != null && current.o2Percent != null && oxygen < current.o2Percent) throw new Error("氧气线只能收紧，不能把缺氧标成安全");
+  if (heat != null && current.heatCelsius != null && heat > current.heatCelsius) throw new Error("温度线只能收紧");
+  let prompt = String(current.semanticPrompt || "");
+  if (patch?.semanticPrompt != null && String(patch.semanticPrompt).trim()) {
+    const next = String(patch.semanticPrompt).trim();
+    if (prompt && !next.includes(prompt)) throw new Error("SOUL 限制只能加严，不能删掉已有句子");
+    prompt = next;
+  }
+  const rules = cleanRules({ soundDb: sound, o2Percent: oxygen, heatCelsius: heat, semanticPrompt: prompt });
+  const { profiles, activeId } = listProfiles();
+  const index = profiles.findIndex((item) => item.id === activeId);
+  if (index >= 0) {
+    profiles[index] = { ...profiles[index], rulesConfig: rules, updatedAt: new Date().toISOString() };
+    writeProfiles(profiles);
+  } else {
+    ensure();
+    writeFileSync(sidecarPath, `${JSON.stringify(rules)}\n`, { mode: 0o600 });
+  }
+  return { soundDb: rules.soundDb, o2Percent: rules.o2Percent, heatCelsius: rules.heatCelsius };
+}
+
 export function labOp(op, body) {
   if (op === "labList") return listProfiles();
   if (op === "labActive") {

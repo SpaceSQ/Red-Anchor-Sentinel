@@ -6,7 +6,9 @@ import { CloudNav } from "@/components/CloudNav";
 import { useLabSkin } from "@/components/LabTheme";
 import { CommandDeck } from "@/components/CommandDeck";
 import { HomeToolkit } from "@/components/HomeToolkit";
+import { ExperienceSandbox } from "@/components/ExperienceSandbox";
 import { RadarTopology, dotFromAgent } from "@/components/RadarTopology";
+import { WormWatch } from "@/components/WormWatch";
 import { assess } from "@/lib/assess";
 import type { LabRules } from "@/lib/lab-rules";
 import { isValidDid } from "@/lib/did";
@@ -90,10 +92,10 @@ export function RadarHome() {
   }, [share]);
 
   const fleet = useMemo(() => {
-    const samples = sandbox ? SANDBOX_FLEET.map((agent) => ({ ...agent, tier: 1 as const, vendor: "沙盒样本", purpose: agent.sandboxNote, patchAuthority: "full" as const })) : [];
+    const samples = sandbox ? SANDBOX_FLEET.map((agent) => ({ ...agent, tier: 1 as const, vendor: t("radar.sampleVendor"), purpose: agent.sandboxNote, patchAuthority: "full" as const })) : [];
     const visible = profile.limited ? live.filter((agent) => agent.tier !== 1) : live;
     return [...visible, ...samples];
-  }, [live, sandbox, profile.limited]);
+  }, [live, sandbox, profile.limited, t]);
 
   const dots = fleet.map((agent) => dotFromAgent(agent, colorOf(agent, vetoIds, vetoDids, labRules)));
 
@@ -104,7 +106,7 @@ export function RadarHome() {
       const hits = await fetchScan();
       setLive(hits.map(hitToAgent));
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "扫描失败");
+      setError(reason instanceof Error ? reason.message : t("radar.scanFail"));
     } finally {
       setScanning(false);
     }
@@ -119,6 +121,8 @@ export function RadarHome() {
             {skin?.logoUrl ? <img src={skin.logoUrl} alt="" className="h-8 w-8 object-contain" /> : null}
             {skin?.customName || t("radar.title")}
           </h1>
+          <p className="mt-1 text-xs text-slate-400">{t("app.role")}</p>
+          <p className="mt-1 max-w-xl text-xs text-slate-500">{t("geo.note")}</p>
         </div>
         <div className="font-mono text-[11px] leading-5 text-slate-300">
           <p>S2-DID {profile.did}</p>
@@ -160,7 +164,9 @@ export function RadarHome() {
         <p className="border border-amber-700 px-3 py-2 text-sm text-amber-200">{t("radar.limited")}</p>
       ) : null}
       <CloudNav />
+      <ExperienceSandbox />
       <AlertBanner />
+      <WormWatch />
       {error ? <p className="text-sm text-amber-300">{error}</p> : null}
       <HomeToolkit fleet={fleet} sourceDid={profile.did} scanning={scanning} scanLocked={profile.hostClass === "container"} onScan={scan} onOpen={setSelectedId} />
       <RadarTopology dots={dots} scanning={scanning} centerDid={profile.did} onSelect={setSelectedId} />
@@ -179,9 +185,9 @@ export function RadarHome() {
       {selectedId ? (
         <aside className="fixed inset-y-0 right-0 z-20 w-full max-w-xl overflow-auto border-l border-slate-700 bg-slate-950 p-3 shadow-2xl">
           <div className="mb-2 flex items-center justify-between">
-            <h2 className="font-display tracking-[0.14em]">指挥面板</h2>
+            <h2 className="font-display tracking-[0.14em]">{t("radar.command")}</h2>
             <button type="button" onClick={() => setSelectedId(null)} className="min-h-10 border border-slate-600 px-3 text-sm">
-              关闭
+              {t("radar.close")}
             </button>
           </div>
           <CommandDeck embedded seedFleet={fleet} lockedSelection={selectedId} depthLocked={profile.limited || mobile || profile.hostClass === "container"} />

@@ -19,6 +19,9 @@ export function CloudNav() {
       <Link href="/lab" className="min-h-10 border border-slate-700 px-3 py-2">
         {t("nav.lab")}
       </Link>
+      <Link href="/link" className="min-h-10 border border-cyan-800 px-3 py-2 text-cyan-200">
+        {t("nav.link")}
+      </Link>
     </nav>
   );
 }

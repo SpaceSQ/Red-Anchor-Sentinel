@@ -40,5 +40,53 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: Red Anchor Sentinel ${{ github.ref_name }}
-          releaseBody: Freeware desktop builds for this tag. macOS produces .app and .dmg, Windows produces .msi and .exe, Linux produces .deb and .AppImage.
+          releaseBody: Freeware builds for this tag. Windows (.msi / .exe), macOS Apple Silicon (.dmg), and Linux (.deb / AppImage) are the desktop host. The Android file is the phone companion, not the full desktop console. iPhone and iPad are not in this release. The installers do not contain the mail password. Put SMTP_HOST, SMTP_PORT, SMTP_USER, and SMTP_PASS in RedAnchorVault/.env inside the user profile. Node.js 22 or newer is required on the desktop for mail, the vault, and the AI worm watch.
           args: --bundles ${{ matrix.bundles }}
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: android-actions/setup-android@v3
+      - run: npm ci
+        working-directory: mobile
+      - run: npx expo prebuild --platform android --no-install
+        working-directory: mobile
+      - name: Build the companion APK
+        working-directory: mobile/android
+        run: chmod +x ./gradlew && ./gradlew assembleRelease --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: mobile/android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
+  publish-android:
+    needs: [build, android]
+    if: ${{ always() && needs.android.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: android-apk
+      - name: Attach the Android companion to the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ver="${GITHUB_REF_NAME#v}"
+          apk="Red.Anchor.Sentinel_${ver}_android.apk"
+          mv app-release.apk "$apk"
+          for _ in 1 2 3 4 5 6 7 8 9 10 11 12; do
+            if gh release upload "$GITHUB_REF_NAME" "$apk" --clobber; then
+              exit 0
+            fi
+            sleep 20
+          done
+          exit 1

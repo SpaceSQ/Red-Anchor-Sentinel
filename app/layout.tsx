@@ -19,9 +19,10 @@ const mono = Share_Tech_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "红锚哨兵",
-  description: "L0 级智能体安全检测与可逆对齐补丁分发",
-  applicationName: "红锚哨兵",
+  title: "Red Anchor Sentinel · AI智能体安全探测与防护工具",
+  description: "AI agent security detection and protection. AI智能体安全探测与防护工具 for the host. AI agents stay under the owner's AI security.",
+  applicationName: "Red Anchor Sentinel",
+  keywords: ["AI智能体", "AI安全", "AI agent security", "Red Anchor Sentinel"],
 };
 
 export const viewport: Viewport = {
@@ -32,12 +33,15 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="zh-CN">
-      <body className={`${display.variable} ${mono.variable} pb-12 font-sans text-slate-200 antialiased`}>
+    <html lang="en">
+      <body className={`${display.variable} ${mono.variable} pb-28 font-sans text-slate-200 antialiased`}>
         <div className="scanlines" aria-hidden />
         <I18nProvider>
           <div className="fixed right-3 top-3 z-50">
             <LangToggle />
+          </div>
+          <div className="relative z-10 px-4 pt-3 pr-24">
+            <img src="/brand/lockup.jpg" alt="RED ANCHOR" className="h-24 w-auto" />
           </div>
           <LabTheme>
             <SentinelSeal />

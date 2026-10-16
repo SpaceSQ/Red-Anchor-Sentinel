@@ -100,7 +100,7 @@ export function HomeToolkit({
           targetDid: "",
           sourceU6a: "",
           targetU6a: agent.u6a,
-          note: `一键标记隔离 ${agent.name}。只写入本机账本，没有向该设备下发指令。`,
+          note: t("home.isolateNote", { name: agent.name }),
           carbon: "UNMEASURED",
           silicon: "UNMEASURED",
           patchStatus: "UNPATCHED",
@@ -108,7 +108,7 @@ export function HomeToolkit({
         }),
       });
     }
-    setRepairNote(targets.length ? `已把 ${targets.length} 个未亮明身份的信号记入隔离账本。有金印的设备仍要你自己拉闸刀。` : "没有需要标记的未亮明信号。");
+    setRepairNote(targets.length ? t("home.isolateDone", { count: targets.length }) : t("home.isolateNone"));
     if (targets[0]) onOpen(targets[0].id);
   }
 
@@ -141,38 +141,38 @@ export function HomeToolkit({
         <p className="border border-green-900 px-2 py-3"><span className="block font-display text-2xl text-safe">{calm}</span><span className="text-xs text-slate-400">{t("home.calm")}</span></p>
       </div>
       <div className="flex flex-wrap gap-2">
-        <button type="button" className="min-h-10 border border-slate-600 px-3 text-sm" onClick={() => downloadText("red-anchor-fleet.csv", fleetCsv(fleet), "text/csv")}>导出 CSV</button>
-        <button type="button" className="min-h-10 border border-slate-600 px-3 text-sm" onClick={() => downloadText("red-anchor-fleet.json", JSON.stringify(fleet.map((agent) => ({ name: agent.name, tier: agent.tier, vendor: redact(agent.vendor || ""), purpose: redact(agent.purpose || agent.sandboxNote) })), null, 2), "application/json")}>导出 JSON</button>
-        <button type="button" className="min-h-10 border border-slate-600 px-3 text-sm" onClick={exportReport}>导出 PDF 摘要</button>
-        <button type="button" className="min-h-10 border border-slate-600 px-3 text-sm" onClick={() => setFeedbackOpen(true)}>极客反馈</button>
-        <button type="button" className="min-h-10 border border-slate-600 px-3 text-sm" onClick={() => setSettingsOpen((open) => !open)}>高级设置</button>
+        <button type="button" className="min-h-10 border border-slate-600 px-3 text-sm" onClick={() => downloadText("red-anchor-fleet.csv", fleetCsv(fleet), "text/csv")}>{t("home.exportCsv")}</button>
+        <button type="button" className="min-h-10 border border-slate-600 px-3 text-sm" onClick={() => downloadText("red-anchor-fleet.json", JSON.stringify(fleet.map((agent) => ({ name: agent.name, tier: agent.tier, vendor: redact(agent.vendor || ""), purpose: redact(agent.purpose || agent.sandboxNote) })), null, 2), "application/json")}>{t("home.exportJson")}</button>
+        <button type="button" className="min-h-10 border border-slate-600 px-3 text-sm" onClick={exportReport}>{t("home.exportPdf")}</button>
+        <button type="button" className="min-h-10 border border-slate-600 px-3 text-sm" onClick={() => setFeedbackOpen(true)}>{t("home.feedback")}</button>
+        <button type="button" className="min-h-10 border border-slate-600 px-3 text-sm" onClick={() => setSettingsOpen((open) => !open)}>{t("home.settings")}</button>
       </div>
       {settingsOpen ? (
         <div className="panel space-y-2 p-3">
           <label className="block text-xs text-slate-400">
-            附加推理提示
+            {t("home.prompt")}
             <textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} rows={2} className="mt-1 w-full border border-slate-700 bg-slate-950 px-2 py-2 text-sm" />
           </label>
           <label className="block text-xs text-slate-400">
-            自动体检间隔（分钟，0 为关闭，最少 5）
+            {t("home.interval")}
             <input value={minutes} onChange={(event) => setMinutes(event.target.value.replace(/[^\d]/g, "").slice(0, 3))} className="mt-1 w-24 border border-slate-700 bg-slate-950 px-2 py-2 font-mono text-sm" />
           </label>
           <div className="flex gap-2">
             {(["red", "amber", "green"] as const).map((item) => (
               <button key={item} type="button" onClick={() => { setAccent(item); document.body.dataset.accent = item; }} className={`min-h-10 border px-3 text-sm ${accent === item ? "border-anchor text-red-200" : "border-slate-700"}`}>
-                {item === "red" ? "锚红" : item === "amber" ? "警戒黄" : "安全绿"}
+                {item === "red" ? t("home.accentRed") : item === "amber" ? t("home.accentAmber") : t("home.accentGreen")}
               </button>
             ))}
           </div>
           <button type="button" className="min-h-10 bg-anchor px-3 text-sm text-white" onClick={() => { window.localStorage.setItem(PROMPT_KEY, prompt.slice(0, 400)); window.localStorage.setItem(INTERVAL_KEY, minutes || "0"); window.localStorage.setItem(ACCENT_KEY, accent); setSettingsOpen(false); }}>
-            保存设置
+            {t("home.save")}
           </button>
         </div>
       ) : null}
       {feedbackOpen ? (
         <div className="panel space-y-2 p-3">
-          <p className="text-sm text-slate-300">建议留在本机导出文件里。页面不会把日志自动寄出。</p>
-          <textarea value={suggestion} onChange={(event) => setSuggestion(event.target.value)} rows={3} className="w-full border border-slate-700 bg-slate-950 px-2 py-2 text-sm" placeholder="扫描或补丁方面的建议" />
+          <p className="text-sm text-slate-300">{t("home.feedbackLead")}</p>
+          <textarea value={suggestion} onChange={(event) => setSuggestion(event.target.value)} rows={3} className="w-full border border-slate-700 bg-slate-950 px-2 py-2 text-sm" placeholder={t("home.feedbackPlaceholder")} />
           <button
             type="button"
             className="min-h-10 border border-slate-600 px-3 text-sm"
@@ -184,9 +184,9 @@ export function HomeToolkit({
               downloadText("red-anchor-feedback.json", JSON.stringify(payload, null, 2), "application/json");
             }}
           >
-            导出脱敏日志
+            {t("home.exportLog")}
           </button>
-          <button type="button" className="ml-2 min-h-10 border border-slate-600 px-3 text-sm" onClick={() => setFeedbackOpen(false)}>关闭</button>
+          <button type="button" className="ml-2 min-h-10 border border-slate-600 px-3 text-sm" onClick={() => setFeedbackOpen(false)}>{t("radar.close")}</button>
         </div>
       ) : null}
       <CommercialNote />

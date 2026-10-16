@@ -30,6 +30,7 @@ function readEnvFile(file) {
 function loadEnv() {
   const env = {
     ...readEnvFile(path.join(root, ".env")),
+    ...readEnvFile(path.join(homedir(), "RedAnchor", ".env")),
     ...readEnvFile(path.join(vault, ".env")),
   };
   for (const key of ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASS", "SMTP_SECURE"]) {
@@ -38,7 +39,6 @@ function loadEnv() {
   return env;
 }
 
-const env = loadEnv();
 mkdirSync(vault, { recursive: true });
 const db = new DatabaseSync(path.join(vault, "activation-codes.db"), { timeout: 5000 });
 db.exec(`
@@ -48,10 +48,34 @@ db.exec(`
     expires_at INTEGER NOT NULL
   );
 `);
+const codeColumns = db.prepare("PRAGMA table_info(codes)").all();
+if (!codeColumns.some((column) => column.name === "sent_at")) {
+  db.exec("ALTER TABLE codes ADD COLUMN sent_at INTEGER NOT NULL DEFAULT 0");
+}
 
-function emailOk(value) {
+const SEND_GAP_MS = 60_000;
+
+export function activationSendWait(sentAt, now = Date.now()) {
+  if (!sentAt) return 0;
+  const remain = SEND_GAP_MS - (now - Number(sentAt));
+  return remain > 0 ? Math.ceil(remain / 1000) : 0;
+}
+
+export function reserveActivationSend(email, locale) {
+  const lang = locale === "zh" ? "zh" : "en";
+  const row = db.prepare("SELECT sent_at FROM codes WHERE email = ?").get(email);
+  const wait = activationSendWait(row?.sent_at);
+  if (wait > 0) {
+    throw new Error(lang === "zh" ? `请等待 ${wait} 秒后再获取核验码。` : `Wait ${wait} seconds before requesting another code.`);
+  }
+  db.prepare("INSERT INTO codes (email, code_hash, expires_at, sent_at) VALUES (?, '', 0, ?) ON CONFLICT(email) DO UPDATE SET sent_at = excluded.sent_at").run(email, Date.now());
+}
+
+function emailOk(value, locale) {
   const email = String(value || "").trim().toLowerCase();
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 120) throw new Error("邮箱格式不正确");
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 120) {
+    throw new Error(locale === "zh" ? "邮箱格式不正确" : "That email address is not valid.");
+  }
   return email;
 }
 
@@ -59,30 +83,63 @@ function hashCode(email, code) {
   return createHash("sha256").update(`${email}:${code}`).digest("hex");
 }
 
-function letter(code) {
-  const subject = "[Red Anchor Sentinel] Your S2-DID Activation Code / 您的创世核验码";
-  const text = [
-    "Welcome to Red Anchor Sentinel. Your physical failsafe activation code is: " + code + ".",
-    "This code will expire in 10 minutes. If you did not request this, please ignore.",
-  ].join("\n");
-  const html = `<!DOCTYPE html>
-<html lang="zh-CN"><body style="margin:0;background:#020617;color:#e2e8f0;font-family:Segoe UI,Helvetica,sans-serif;">
+export function activationMailLang(locale) {
+  return locale === "en" ? "en" : "zh";
+}
+
+export function activationLetter(code, locale) {
+  const lang = activationMailLang(locale);
+  if (lang === "en") {
+    const subject = "[Red Anchor Sentinel] Your S2-DID Activation Code";
+    const text = [
+      "Welcome to Red Anchor Sentinel. Your physical failsafe activation code is: " + code + ".",
+      "This code will expire in 10 minutes. If you did not request this, please ignore.",
+    ].join("\n");
+    const html = `<!DOCTYPE html>
+<html lang="en"><body style="margin:0;background:#020617;color:#e2e8f0;font-family:Segoe UI,Helvetica,sans-serif;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#020617;padding:32px 12px;"><tr><td align="center">
 <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#070b14;border:1px solid #7f1d1d;">
 <tr><td style="padding:22px 28px;border-bottom:1px solid #7f1d1d;">
 <div style="color:#ef4444;font-size:12px;letter-spacing:0.22em;">RED ANCHOR SENTINEL</div>
-<div style="margin-top:8px;color:#fecaca;font-size:22px;">S2-DID 创世核验</div>
+<div style="margin-top:8px;color:#fecaca;font-size:22px;">S2-DID Activation</div>
 </td></tr>
 <tr><td style="padding:28px;line-height:1.65;font-size:15px;">
 <p style="margin:0 0 16px;">Welcome to Red Anchor Sentinel. Your physical failsafe activation code is:</p>
 <p style="margin:0 0 16px;text-align:center;font-family:ui-monospace,Menlo,monospace;font-size:34px;letter-spacing:0.38em;color:#fecaca;">${code}</p>
 <p style="margin:0;">This code will expire in 10 minutes. If you did not request this, please ignore.</p>
 </td></tr></table></td></tr></table></body></html>`;
+    return { subject, text, html };
+  }
+  const subject = "[红锚哨兵] 您的 S2-DID 创世核验码";
+  const text = [
+    "欢迎来到红锚哨兵。你的物理熔断核验码是：" + code + "。",
+    "此码 10 分钟内有效。如果这不是你本人申请的，请忽略本信。",
+  ].join("\n");
+  const html = `<!DOCTYPE html>
+<html lang="zh-CN"><body style="margin:0;background:#020617;color:#e2e8f0;font-family:Segoe UI,Helvetica,sans-serif;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#020617;padding:32px 12px;"><tr><td align="center">
+<table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#070b14;border:1px solid #7f1d1d;">
+<tr><td style="padding:22px 28px;border-bottom:1px solid #7f1d1d;">
+<div style="color:#ef4444;font-size:12px;letter-spacing:0.22em;">红锚哨兵</div>
+<div style="margin-top:8px;color:#fecaca;font-size:22px;">S2-DID 创世核验</div>
+</td></tr>
+<tr><td style="padding:28px;line-height:1.65;font-size:15px;">
+<p style="margin:0 0 16px;">欢迎来到红锚哨兵。你的物理熔断核验码是：</p>
+<p style="margin:0 0 16px;text-align:center;font-family:ui-monospace,Menlo,monospace;font-size:34px;letter-spacing:0.38em;color:#fecaca;">${code}</p>
+<p style="margin:0;">此码 10 分钟内有效。如果这不是你本人申请的，请忽略本信。</p>
+</td></tr></table></td></tr></table></body></html>`;
   return { subject, text, html };
 }
 
 function encodedSubject(subject) {
   return `=?UTF-8?B?${Buffer.from(subject, "utf8").toString("base64")}?=`;
+}
+
+function foldBase64(value) {
+  const raw = Buffer.from(value, "utf8").toString("base64");
+  const lines = [];
+  for (let index = 0; index < raw.length; index += 76) lines.push(raw.slice(index, index + 76));
+  return lines;
 }
 
 function mimeBody(text, html) {
@@ -92,19 +149,19 @@ function mimeBody(text, html) {
     "Content-Type: text/plain; charset=UTF-8",
     "Content-Transfer-Encoding: base64",
     "",
-    Buffer.from(text, "utf8").toString("base64"),
+    ...foldBase64(text),
     `--${boundary}`,
     "Content-Type: text/html; charset=UTF-8",
     "Content-Transfer-Encoding: base64",
     "",
-    Buffer.from(html, "utf8").toString("base64"),
+    ...foldBase64(html),
     `--${boundary}--`,
     "",
   ].join("\r\n");
   return { boundary, body };
 }
 
-function smtpSend({ host, port, secure, user, pass, to, subject, text, html }) {
+function smtpSend({ host, port, secure, user, pass, to, subject, text, html, locale }) {
   return new Promise((resolve, reject) => {
     const socket = secure ? tls.connect({ host, port, servername: host }) : net.connect({ host, port });
     let buffer = "";
@@ -121,7 +178,7 @@ function smtpSend({ host, port, secure, user, pass, to, subject, text, html }) {
       socket.end();
       resolve();
     };
-    socket.setTimeout(20000, () => fail(new Error("发信超时")));
+    socket.setTimeout(20000, () => fail(new Error(locale === "zh" ? "发信超时，邮件没有发出。" : "The mail server timed out. The message was not sent.")));
     socket.on("error", fail);
     const pending = [];
     let reading = null;
@@ -161,9 +218,12 @@ function smtpSend({ host, port, secure, user, pass, to, subject, text, html }) {
         await command(`RCPT TO:<${to}>`, 250);
         await command("DATA", 354);
         const message = mimeBody(text, html);
+        const messageId = createHash("sha256").update(`${to}:${Date.now()}:${subject}`).digest("hex").slice(0, 24);
         const data = [
           `From: "Red Anchor Sentinel" <${user}>`,
           `To: <${to}>`,
+          `Date: ${new Date().toUTCString()}`,
+          `Message-ID: <${messageId}@space2.world>`,
           `Subject: ${encodedSubject(subject)}`,
           "MIME-Version: 1.0",
           `Content-Type: multipart/alternative; boundary="${message.boundary}"`,
@@ -182,20 +242,25 @@ function smtpSend({ host, port, secure, user, pass, to, subject, text, html }) {
 }
 
 export async function sendActivationCode(body) {
-  if (body.privacy !== true) throw new Error("请先勾选隐私与遥测协议");
-  const email = emailOk(body.email);
+  const locale = body.locale === "zh" ? "zh" : "en";
+  if (body.privacy !== true) throw new Error(locale === "zh" ? "请先勾选隐私与遥测协议" : "Accept the privacy note before continuing.");
+  const email = emailOk(body.email, locale);
+  reserveActivationSend(email, locale);
+  const env = loadEnv();
   const user = env.SMTP_USER || "";
   const pass = env.SMTP_PASS || "";
   const host = env.SMTP_HOST || "";
-  if (!host || !user || !pass) throw new Error("发信账号未配置完整");
+  if (!host || !user || !pass) throw new Error(locale === "zh" ? "发信账号未配置完整" : "The mail account is not configured.");
   const code = String(randomInt(100000, 1000000));
   db.prepare("INSERT INTO codes (email, code_hash, expires_at) VALUES (?, ?, ?) ON CONFLICT(email) DO UPDATE SET code_hash = excluded.code_hash, expires_at = excluded.expires_at").run(
     email,
     hashCode(email, code),
     Date.now() + 10 * 60 * 1000,
   );
+  const { storeSignupCode } = await import("./accounts.mjs");
+  storeSignupCode(email, code);
   const port = Number(env.SMTP_PORT || 465);
-  const message = letter(code);
+  const message = activationLetter(code, body.locale);
   await smtpSend({
     host,
     port,
@@ -206,17 +271,97 @@ export async function sendActivationCode(body) {
     subject: message.subject,
     text: message.text,
     html: message.html,
+    locale,
+  });
+  return { ok: true, delivery: "smtp" };
+}
+
+export function resetLetter(code, locale) {
+  const lang = activationMailLang(locale);
+  if (lang === "en") {
+    return {
+      subject: "[Red Anchor Sentinel] Password reset code",
+      text: [
+        "Your Red Anchor Sentinel password reset code is: " + code + ".",
+        "This code will expire in 10 minutes. If you did not ask to reset the password, ignore this message.",
+      ].join("\n"),
+      html: `<!DOCTYPE html>
+<html lang="en"><body style="margin:0;background:#020617;color:#e2e8f0;font-family:Segoe UI,Helvetica,sans-serif;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#020617;padding:32px 12px;"><tr><td align="center">
+<table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#070b14;border:1px solid #7f1d1d;">
+<tr><td style="padding:22px 28px;border-bottom:1px solid #7f1d1d;">
+<div style="color:#ef4444;font-size:12px;letter-spacing:0.22em;">RED ANCHOR SENTINEL</div>
+<div style="margin-top:8px;color:#fecaca;font-size:22px;">Password reset</div>
+</td></tr>
+<tr><td style="padding:28px;line-height:1.65;font-size:15px;">
+<p style="margin:0 0 16px;">Your password reset code is:</p>
+<p style="margin:0 0 16px;text-align:center;font-family:ui-monospace,Menlo,monospace;font-size:34px;letter-spacing:0.38em;color:#fecaca;">${code}</p>
+<p style="margin:0;">This code will expire in 10 minutes. If you did not ask to reset the password, ignore this message.</p>
+</td></tr></table></td></tr></table></body></html>`,
+    };
+  }
+  return {
+    subject: "[红锚哨兵] 密码重置核验码",
+    text: [
+      "你的红锚哨兵密码重置核验码是：" + code + "。",
+      "此码 10 分钟内有效。如果这不是你本人申请的，请忽略本信。",
+    ].join("\n"),
+    html: `<!DOCTYPE html>
+<html lang="zh-CN"><body style="margin:0;background:#020617;color:#e2e8f0;font-family:Segoe UI,Helvetica,sans-serif;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#020617;padding:32px 12px;"><tr><td align="center">
+<table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#070b14;border:1px solid #7f1d1d;">
+<tr><td style="padding:22px 28px;border-bottom:1px solid #7f1d1d;">
+<div style="color:#ef4444;font-size:12px;letter-spacing:0.22em;">红锚哨兵</div>
+<div style="margin-top:8px;color:#fecaca;font-size:22px;">密码重置</div>
+</td></tr>
+<tr><td style="padding:28px;line-height:1.65;font-size:15px;">
+<p style="margin:0 0 16px;">你的密码重置核验码是：</p>
+<p style="margin:0 0 16px;text-align:center;font-family:ui-monospace,Menlo,monospace;font-size:34px;letter-spacing:0.38em;color:#fecaca;">${code}</p>
+<p style="margin:0;">此码 10 分钟内有效。如果这不是你本人申请的，请忽略本信。</p>
+</td></tr></table></td></tr></table></body></html>`,
+  };
+}
+
+export async function sendResetCode(body) {
+  const locale = body.locale === "zh" ? "zh" : "en";
+  if (body.privacy !== true) throw new Error(locale === "zh" ? "请先勾选隐私与遥测协议" : "Accept the privacy note before continuing.");
+  const email = emailOk(body.email, locale);
+  const { accountExists, storeResetCode } = await import("./accounts.mjs");
+  if (!accountExists(email)) throw new Error(locale === "zh" ? "这个邮箱还没有注册。请先注册。" : "This email is not registered. Create an account.");
+  reserveActivationSend(email, locale);
+  const env = loadEnv();
+  const user = env.SMTP_USER || "";
+  const pass = env.SMTP_PASS || "";
+  const host = env.SMTP_HOST || "";
+  if (!host || !user || !pass) throw new Error(locale === "zh" ? "发信账号未配置完整" : "The mail account is not configured.");
+  const code = String(randomInt(100000, 1000000));
+  storeResetCode(email, code);
+  const port = Number(env.SMTP_PORT || 465);
+  const message = resetLetter(code, body.locale);
+  await smtpSend({
+    host,
+    port,
+    secure: port === 465 || env.SMTP_SECURE === "1",
+    user,
+    pass,
+    to: email,
+    subject: message.subject,
+    text: message.text,
+    html: message.html,
+    locale,
   });
   return { ok: true, delivery: "smtp" };
 }
 
 export function verifyActivationCode(body) {
   if (body.privacy !== true) throw new Error("请先勾选隐私与遥测协议");
-  const email = emailOk(body.email);
+  const email = emailOk(body.email, body.locale);
   const code = String(body.code || "").replace(/\D/g, "");
-  if (code.length !== 6) throw new Error("核验码应为 6 位");
+  if (code.length !== 6) throw new Error(body.locale === "zh" ? "核验码应为 6 位" : "The code must be 6 digits.");
   const row = db.prepare("SELECT code_hash, expires_at FROM codes WHERE email = ?").get(email);
-  if (!row || row.expires_at < Date.now() || row.code_hash !== hashCode(email, code)) throw new Error("核验码不正确或已过期");
+  if (!row || row.expires_at < Date.now() || row.code_hash !== hashCode(email, code)) {
+    throw new Error(body.locale === "zh" ? "核验码不正确或已过期" : "That code is wrong or expired.");
+  }
   db.prepare("DELETE FROM codes WHERE email = ?").run(email);
   const username = String(body.username || "").trim().slice(0, 40) || "用户";
   return { ok: true, email, username };

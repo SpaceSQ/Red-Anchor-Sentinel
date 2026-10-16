@@ -6,7 +6,7 @@ import { readAppendix } from "@/server/lab-store";
 
 export const dynamic = "force-dynamic";
 
-const OPS = new Set(["hardware", "scan", "saveVault", "loadVault", "writeOutbox", "probeLlm", "analyzeContext", "saveActivation", "askAlign", "readCard", "checkClamp"]);
+const OPS = new Set(["hardware", "scan", "saveVault", "loadVault", "writeOutbox", "probeLlm", "analyzeContext", "saveActivation", "askAlign", "readCard", "checkClamp", "linkEnsure", "wormWatch", "rsiStatus", "rsiPropose", "rsiPromote"]);
 
 function runHost(op: string, body: unknown): Promise<unknown> {
   return new Promise((resolve, reject) => {

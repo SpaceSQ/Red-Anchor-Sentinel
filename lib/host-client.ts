@@ -61,10 +61,22 @@ export async function saveActivationRecord(body: Record<string, unknown>) {
   return host<{ ok: boolean }>("saveActivation", body);
 }
 
-export async function postCloud<T>(op: "sendCode" | "verifyCode", body: Record<string, unknown>): Promise<T> {
+export async function postCloud<T>(op: "sendCode" | "confirmEmail" | "registerAccount" | "loginAccount" | "resetCode" | "confirmReset" | "resetPassword", body: Record<string, unknown>): Promise<T> {
   const tauri = await tauriHost<T>(op, body);
   if (tauri) return tauri;
-  const path = op === "sendCode" ? "/api/cloud/send-code" : "/api/cloud/verify-code";
+  const path = op === "sendCode"
+    ? "/api/cloud/send-code"
+    : op === "confirmEmail"
+      ? "/api/cloud/confirm-email"
+      : op === "registerAccount"
+        ? "/api/cloud/register"
+        : op === "loginAccount"
+          ? "/api/cloud/login"
+          : op === "resetCode"
+            ? "/api/cloud/reset-code"
+            : op === "confirmReset"
+              ? "/api/cloud/confirm-reset"
+              : "/api/cloud/reset-password";
   const response = await fetch(path, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -82,6 +94,56 @@ export async function fetchHardware(): Promise<HardwareProfile> {
 export async function fetchScan(): Promise<ScanHit[]> {
   const result = await host<{ hits: ScanHit[] }>("scan");
   return result.hits;
+}
+
+export interface WormFinding {
+  id: string;
+  stage: string;
+  title: string;
+  titleZh?: string;
+  note: string;
+  noteZh?: string;
+  evidence: string;
+}
+
+export interface WormDraft {
+  id: string;
+  stage: string;
+  kind: string;
+  value: string;
+  title: string;
+  titleZh?: string;
+  note: string;
+  noteZh?: string;
+  port?: string;
+}
+
+export interface RsiStatus {
+  generation: number;
+  parent: string;
+  builtin: number;
+  added: number;
+  drafts: number;
+  law: string;
+}
+
+export interface WormReport {
+  severity: "clear" | "note" | "watch" | "critical" | string;
+  stages: string[];
+  findings: WormFinding[];
+  library: number;
+  basis: string;
+  drafts: WormDraft[];
+  rsi: RsiStatus;
+  observedAt: string;
+}
+
+export async function fetchWormWatch(): Promise<WormReport> {
+  return host<WormReport>("wormWatch");
+}
+
+export async function promoteWormSign(id: string): Promise<{ ok: boolean; status: RsiStatus }> {
+  return host<{ ok: boolean; status: RsiStatus }>("rsiPromote", { id, human: true });
 }
 
 export async function saveVault(profile: SentinelProfile, apiKey: string) {
@@ -117,6 +179,10 @@ export async function readCard(baseUrl: string) {
 
 export async function checkClamp(baseUrl: string, hash: string) {
   return host<{ confirmed: boolean }>("checkClamp", { baseUrl, hash });
+}
+
+export async function ensureMobileLink() {
+  return host<{ ok: boolean; already?: boolean; started?: boolean }>("linkEnsure");
 }
 
 export async function publishGossip(note: { sourceDid: string; targetDid: string; targetId: string; level: "SAFE" | "WARNING" | "CRITICAL"; note: string }) {

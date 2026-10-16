@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleDisplayName</key>
+  <string>红锚哨兵</string>
+  <key>CFBundleIdentifier</key>
+  <string>com.robot0.ras.mobile</string>
+  <key>NSAppTransportSecurity</key>
+  <dict>
+    <key>NSAllowsArbitraryLoads</key>
+    <false/>
+    <key>NSAllowsLocalNetworking</key>
+    <true/>
+  </dict>
+  <key>NSMicrophoneUsageDescription</key>
+  <string>Red Anchor Sentinel requires microphone access to capture ambient sound levels (in decibels) for the environmental safety radar. Audio is processed locally and never uploaded.</string>
+  <key>NSCameraUsageDescription</key>
+  <string>Red Anchor Sentinel requires camera access to scan the QR code displayed on your desktop host for secure LAN pairing.</string>
+  <key>NSLocalNetworkUsageDescription</key>
+  <string>This app requires local network access to discover and securely pair with the Red Anchor desktop host running on your same Wi-Fi.</string>
+  <key>NSFaceIDUsageDescription</key>
+  <string>Red Anchor Sentinel uses Face ID to unlock the account session stored in this device's keychain. The session stays on the phone and is not uploaded.</string>
+  <key>NSBonjourServices</key>
+  <array>
+    <string>_ras._tcp</string>
+  </array>
+  <key>UIApplicationSceneManifest</key>
+  <dict>
+    <key>UIApplicationSupportsMultipleScenes</key>
+    <false/>
+    <key>UISceneConfigurations</key>
+    <dict>
+      <key>UIWindowSceneSessionRoleApplication</key>
+      <array>
+        <dict>
+          <key>UISceneConfigurationName</key>
+          <string>Default Configuration</string>
+          <key>UISceneDelegateClassName</key>
+          <string>EXExpoAppSceneDelegate</string>
+        </dict>
+      </array>
+    </dict>
+  </dict>
+  <key>UIBackgroundModes</key>
+  <array>
+    <string>fetch</string>
+    <string>remote-notification</string>
+  </array>
+  <key>ITSAppUsesNonExemptEncryption</key>
+  <false/>
+</dict>
+</plist>

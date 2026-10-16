@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { useI18n } from "@/lib/i18n";
 
 interface Broadcast {
   id: string;
@@ -32,6 +33,7 @@ function tone(severity: Broadcast["severity"], unread: boolean): string {
 }
 
 export function AlertBanner() {
+  const { t } = useI18n();
   const [items, setItems] = useState<Broadcast[]>([]);
   const [read, setRead] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
@@ -85,22 +87,22 @@ export function AlertBanner() {
           {lead.title}
         </button>
         <button type="button" onClick={() => { setCurrent(null); setOpen(true); }} className="shrink-0 text-xs">
-          查看全部公告
+          {t("alert.all")}
           {unread.length > 0 ? <span className="ml-2 inline-block min-w-5 rounded-full bg-anchor px-1 text-center text-white">{unread.length}</span> : null}
         </button>
       </div>
       {open ? (
         <aside className="fixed inset-y-0 right-0 z-40 w-full max-w-xl overflow-auto border-l border-slate-700 bg-slate-950 p-4 pb-14 shadow-2xl">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="font-display tracking-[0.14em]">{shown ? "公告正文" : "全部公告"}</h2>
+            <h2 className="font-display tracking-[0.14em]">{shown ? t("alert.body") : t("alert.list")}</h2>
             <button type="button" onClick={() => setOpen(false)} className="min-h-10 border border-slate-600 px-3 text-sm">
-              关闭
+              {t("radar.close")}
             </button>
           </div>
           {shown ? (
             <article>
               <button type="button" onClick={() => setCurrent(null)} className="mb-3 text-xs text-slate-400">
-                返回列表
+                {t("alert.back")}
               </button>
               <p className="text-xs text-slate-500">{shown.severity} · {shown.publisher} · {shown.created_at.slice(0, 16).replace("T", " ")}</p>
               <h3 className="mt-1 text-2xl">{shown.title}</h3>
@@ -134,7 +136,7 @@ export function AlertBanner() {
                 <li key={item.id}>
                   <button type="button" onClick={() => openOne(item.id)} className="w-full border border-slate-800 px-3 py-2 text-left">
                     <span className="text-sm">{item.severity === "CRITICAL" ? "⚠️ " : ""}{item.title}</span>
-                    <span className="mt-1 block text-xs text-slate-500">{item.severity} · {read.includes(item.id) ? "已读" : "未读"}</span>
+                    <span className="mt-1 block text-xs text-slate-500">{item.severity} · {read.includes(item.id) ? t("alert.read") : t("alert.unread")}</span>
                   </button>
                 </li>
               ))}

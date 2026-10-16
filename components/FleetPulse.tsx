@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { readActivation } from "@/lib/activation";
+import { useI18n } from "@/lib/i18n";
 import { APP_VERSION } from "@/lib/release";
 
 const PRIVACY_KEY = "red-anchor-privacy";
@@ -26,6 +27,7 @@ function writeRuntime(seconds: number) {
 }
 
 export function FleetPulse({ did }: { did: string }) {
+  const { t } = useI18n();
   const [ready, setReady] = useState(false);
   const [privacy, setPrivacy] = useState(false);
   const [accepted, setAccepted] = useState(false);
@@ -87,7 +89,7 @@ export function FleetPulse({ did }: { did: string }) {
   async function consent() {
     const activation = readActivation();
     if (!activation?.email) {
-      setNote("请先完成邮箱核验。");
+      setNote(t("pulse.need"));
       return;
     }
     const response = await fetch("/api/cloud/consent", {
@@ -97,7 +99,7 @@ export function FleetPulse({ did }: { did: string }) {
     });
     const data = (await response.json()) as { error?: string };
     if (!response.ok) {
-      setNote(data.error || "协议没有记下");
+      setNote(data.error || t("pulse.fail"));
       return;
     }
     window.localStorage.setItem(PRIVACY_KEY, "1");
@@ -109,13 +111,13 @@ export function FleetPulse({ did }: { did: string }) {
   if (!accepted) {
     return (
       <section className="mx-3 mt-3 border border-amber-700 bg-slate-950 px-3 py-3 text-sm">
-        <p className="text-amber-100">遥测还没开始。勾选下面这句话之后，哨兵才会向本机母港发送心跳。</p>
+        <p className="text-amber-100">{t("pulse.lead")}</p>
         <label className="mt-2 flex items-start gap-2 text-slate-300">
           <input type="checkbox" checked={privacy} onChange={(event) => setPrivacy(event.target.checked)} className="mt-1" />
           <span>We only collect your email, uptime, and tickets. Zero local LAN or 14-dimensional scan data will ever be uploaded.</span>
         </label>
         <button type="button" disabled={!privacy} onClick={() => void consent()} className="mt-2 min-h-10 bg-anchor px-3 text-white disabled:opacity-40">
-          同意并登记
+          {t("pulse.accept")}
         </button>
         {note ? <p className="mt-2 text-amber-300">{note}</p> : null}
       </section>
@@ -125,10 +127,10 @@ export function FleetPulse({ did }: { did: string }) {
   if (!update) return null;
   return (
     <p className="mx-3 mt-3 border border-red-700 bg-slate-950 px-3 py-2 text-sm text-red-100">
-      发现哨兵新协议（更新） {update.version}
+      {t("pulse.update", { version: update.version })}
       {update.url ? (
         <a className="ml-2 underline" href={update.url}>
-          下载
+          {t("pulse.download")}
         </a>
       ) : null}
     </p>

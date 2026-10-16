@@ -1,7 +1,56 @@
 use std::io::Write;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
-use tauri::Manager;
+use std::sync::Mutex;
+use tauri::{Manager, RunEvent};
+
+struct LinkChild(Mutex<Option<std::process::Child>>);
+
+fn spawn_link(app: &tauri::AppHandle) -> Option<std::process::Child> {
+    let script = script_path(app, "link.mjs");
+    if !script.exists() {
+        return None;
+    }
+    let mut command = Command::new(node_executable());
+    command.arg(script).stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::null());
+    apply_mail_env(&mut command);
+    command.spawn().ok()
+}
+
+fn process_is_link(pid: u32) -> bool {
+    let output = if cfg!(windows) {
+        Command::new("powershell")
+            .args(["-NoProfile", "-Command", &format!("(Get-CimInstance Win32_Process -Filter \"ProcessId={pid}\").CommandLine")])
+            .output()
+    } else {
+        Command::new("ps").args(["-p", &pid.to_string(), "-o", "command="]).output()
+    };
+    let Ok(output) = output else {
+        return false;
+    };
+    String::from_utf8_lossy(&output.stdout).contains("link.mjs")
+}
+
+fn stop_recorded_link() {
+    let Some(home) = std::env::var_os("HOME").or_else(|| std::env::var_os("USERPROFILE")) else {
+        return;
+    };
+    let pid_path = PathBuf::from(home).join("RedAnchorVault").join("link.pid");
+    let Ok(text) = std::fs::read_to_string(&pid_path) else {
+        return;
+    };
+    let Ok(pid) = text.trim().parse::<u32>() else {
+        return;
+    };
+    if !process_is_link(pid) {
+        return;
+    }
+    let _ = if cfg!(windows) {
+        Command::new("taskkill").args(["/PID", &pid.to_string(), "/F"]).status()
+    } else {
+        Command::new("kill").arg(pid.to_string()).status()
+    };
+}
 
 fn node_executable() -> String {
     let candidates: &[&str] = if cfg!(windows) {
@@ -17,8 +66,8 @@ fn node_executable() -> String {
     "node".to_string()
 }
 
-fn bundled_script(dir: &std::path::Path) -> Option<PathBuf> {
-    for relative in ["_up_/server/host-cli.mjs", "server/host-cli.mjs"] {
+fn bundled_script(dir: &std::path::Path, name: &str) -> Option<PathBuf> {
+    for relative in [format!("_up_/server/{name}"), format!("server/{name}")] {
         let candidate = dir.join(relative);
         if candidate.exists() {
             return Some(candidate);
@@ -27,27 +76,29 @@ fn bundled_script(dir: &std::path::Path) -> Option<PathBuf> {
     None
 }
 
-fn host_script(app: &tauri::AppHandle) -> PathBuf {
+fn script_path(app: &tauri::AppHandle, name: &str) -> PathBuf {
     if let Ok(dir) = app.path().resource_dir() {
-        if let Some(script) = bundled_script(&dir) {
+        if let Some(script) = bundled_script(&dir, name) {
             return script;
         }
     }
     if let Ok(exe) = std::env::current_exe() {
         if let Some(contents) = exe.parent().and_then(|dir| dir.parent()) {
-            if let Some(script) = bundled_script(&contents.join("Resources")) {
+            if let Some(script) = bundled_script(&contents.join("Resources"), name) {
                 return script;
             }
         }
     }
-    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../server/host-cli.mjs")
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../server").join(name)
 }
 
 fn apply_mail_env(command: &mut Command) {
     let mut files = Vec::new();
     files.push(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.env"));
     if let Some(home) = std::env::var_os("HOME").or_else(|| std::env::var_os("USERPROFILE")) {
-        files.push(PathBuf::from(home).join("RedAnchorVault").join(".env"));
+        let home = PathBuf::from(home);
+        files.push(home.join("RedAnchor").join(".env"));
+        files.push(home.join("RedAnchorVault").join(".env"));
     }
     for file in files {
         let Ok(text) = std::fs::read_to_string(file) else {
@@ -73,7 +124,7 @@ fn apply_mail_env(command: &mut Command) {
 
 #[tauri::command]
 fn host_op(app: tauri::AppHandle, op: String, body: serde_json::Value) -> Result<serde_json::Value, String> {
-    let script = host_script(&app);
+    let script = script_path(&app, "host-cli.mjs");
     if !script.exists() {
         return Err("打包后的桌面壳需要随包附带 server/host-cli.mjs。开发态请从仓库根目录启动。".into());
     }
@@ -98,7 +149,24 @@ fn host_op(app: tauri::AppHandle, op: String, body: serde_json::Value) -> Result
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .setup(|app| {
+            app.manage(LinkChild(Mutex::new(spawn_link(app.handle()))));
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![host_op])
-        .run(tauri::generate_context!())
-        .expect("红锚哨兵桌面壳启动失败");
+        .build(tauri::generate_context!())
+        .expect("红锚哨兵桌面壳启动失败")
+        .run(|app, event| {
+            if !matches!(event, RunEvent::Exit) {
+                return;
+            }
+            if let Some(state) = app.try_state::<LinkChild>() {
+                if let Ok(mut guard) = state.0.lock() {
+                    if let Some(child) = guard.as_mut() {
+                        let _ = child.kill();
+                    }
+                }
+            }
+            stop_recorded_link();
+        });
 }

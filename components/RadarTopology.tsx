@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useMemo } from "react";
 import type { AgentProfile } from "@/lib/fleet";
+import { useI18n } from "@/lib/i18n";
 
 const ReactECharts = dynamic(() => import("echarts-for-react"), { ssr: false });
 
@@ -35,6 +36,7 @@ export function RadarTopology({
   centerDid: string;
   onSelect: (id: string) => void;
 }) {
+  const { t } = useI18n();
   const option = useMemo(
     () => ({
       backgroundColor: "transparent",
@@ -58,7 +60,7 @@ export function RadarTopology({
         axisLabel: {
           color: "#94a3b8",
           fontSize: 10,
-          formatter: (value: number) => (value < 20 ? "" : value < 45 ? "1级" : value < 75 ? "2级" : "3级"),
+          formatter: (value: number) => (value < 20 ? "" : value < 45 ? "T1" : value < 75 ? "T2" : "T3"),
         },
         splitLine: { lineStyle: { color: "rgba(239,68,68,0.35)" } },
         splitArea: { show: false },
@@ -73,9 +75,9 @@ export function RadarTopology({
           const minutes = Math.max(0, Math.round((data.uptimeSec || 0) / 60));
           return [
             data.name,
-            `${data.tier} 级 · ${data.vendor || "未标明"}`,
-            data.purpose || "目的未声明",
-            minutes ? `已观察 ${minutes} 分钟` : "时长未知",
+            `${t("radar.tier", { tier: data.tier })} · ${data.vendor || t("radar.unnamed")}`,
+            data.purpose || t("radar.noPurpose"),
+            minutes ? t("radar.watched", { minutes }) : t("radar.unknownTime"),
           ].join("<br/>");
         },
       },
@@ -92,14 +94,14 @@ export function RadarTopology({
         },
       ],
     }),
-    [dots],
+    [dots, t],
   );
 
   return (
     <div className="panel relative min-h-[520px] p-3">
       <div className="mb-2 flex items-baseline justify-between">
-        <h2 className="font-display text-[11px] uppercase tracking-[0.22em] text-slate-400">全域雷达</h2>
-        <p className="font-mono text-[10px] text-slate-500">{scanning ? "扫描波束转动中" : "波束待命"}</p>
+        <h2 className="font-display text-[11px] uppercase tracking-[0.22em] text-slate-400">{t("radar.field")}</h2>
+        <p className="font-mono text-[10px] text-slate-500">{scanning ? t("radar.beamOn") : t("radar.beamOff")}</p>
       </div>
       <div className="relative">
         <div className={`pointer-events-none absolute inset-0 ${scanning ? "sweep sweep-fast" : "sweep"} opacity-70`} />
@@ -113,7 +115,7 @@ export function RadarTopology({
           }}
         />
         <div className="pointer-events-none absolute left-1/2 top-1/2 w-40 -translate-x-1/2 -translate-y-1/2 text-center">
-          <p className="font-display text-xs tracking-[0.16em] text-red-300">本机</p>
+          <p className="font-display text-xs tracking-[0.16em] text-red-300">{t("radar.local")}</p>
           <p className="break-all font-mono text-[10px] text-slate-300">{centerDid}</p>
         </div>
       </div>

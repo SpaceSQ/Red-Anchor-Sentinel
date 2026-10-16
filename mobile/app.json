@@ -1,0 +1,85 @@
+{
+  "expo": {
+    "name": "红锚哨兵",
+    "slug": "red-anchor-sentinel",
+    "version": "0.1.0",
+    "orientation": "default",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "scheme": "ras",
+    "backgroundColor": "#05080A",
+    "ios": {
+      "bundleIdentifier": "com.robot0.ras.mobile",
+      "buildNumber": "6",
+      "supportsTablet": true,
+      "requireFullScreen": false,
+      "infoPlist": {
+        "CFBundleDisplayName": "红锚哨兵",
+        "NSMicrophoneUsageDescription": "Red Anchor Sentinel requires microphone access to capture ambient sound levels (in decibels) for the environmental safety radar. Audio is processed locally and never uploaded.",
+        "NSCameraUsageDescription": "Red Anchor Sentinel requires camera access to scan the QR code displayed on your desktop host for secure LAN pairing.",
+        "NSLocalNetworkUsageDescription": "This app requires local network access to discover and securely pair with the Red Anchor desktop host running on your same Wi-Fi.",
+        "NSFaceIDUsageDescription": "Red Anchor Sentinel uses Face ID to unlock the account session stored in this device's keychain. The session stays on the phone and is not uploaded.",
+        "NSBonjourServices": [
+          "_ras._tcp"
+        ],
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": false,
+          "NSAllowsLocalNetworking": true
+        },
+        "UIBackgroundModes": [
+          "fetch",
+          "remote-notification"
+        ],
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.robot0.ras.mobile",
+      "versionCode": 6,
+      "adaptiveIcon": {
+        "backgroundColor": "#FF5522",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "enableSceneSupport": true
+          }
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Red Anchor Sentinel requires camera access to scan the QR code displayed on your desktop host for secure LAN pairing.",
+          "microphonePermission": "Red Anchor Sentinel requires microphone access to capture ambient sound levels (in decibels) for the environmental safety radar. Audio is processed locally and never uploaded."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#ef4444"
+        }
+      ],
+      [
+        "expo-secure-store",
+        {
+          "faceIDPermission": "Red Anchor Sentinel uses Face ID to unlock the account session stored in this device's keychain. The session stays on the phone and is not uploaded."
+        }
+      ],
+      "expo-sqlite"
+    ],
+    "extra": {
+      "hostService": "_ras._tcp",
+      "desktopDownload": "http://www.robot0.com/RAS"
+    }
+  }
+}

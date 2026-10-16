@@ -2,14 +2,15 @@
 
 import { useI18n } from "@/lib/i18n";
 
-const RELEASES = "https://github.com/SpaceSQ/Red-Anchor-Sentinel/releases/latest";
+const BASE = "https://github.com/SpaceSQ/Red-Anchor-Sentinel/releases/download/v9.1.4";
 
 export default function RasLandingPage() {
   const { t } = useI18n();
   const downloads = [
-    { title: t("land.win"), note: t("land.win.note") },
-    { title: t("land.mac"), note: t("land.mac.note") },
-    { title: t("land.linux"), note: t("land.linux.note") },
+    { title: t("land.win"), note: t("land.win.note"), href: `${BASE}/Red.Anchor.Sentinel_9.1.4_x64-setup.exe` },
+    { title: t("land.mac"), note: t("land.mac.note"), href: `${BASE}/Red.Anchor.Sentinel_9.1.4_aarch64.dmg` },
+    { title: t("land.android"), note: t("land.android.note"), href: `${BASE}/Red.Anchor.Sentinel_9.1.4_android.apk` },
+    { title: t("land.linux"), note: t("land.linux.note"), href: `${BASE}/Red.Anchor.Sentinel_9.1.4_amd64.deb` },
   ];
   const features = [
     { title: t("land.f1.title"), body: t("land.f1.body") },
@@ -49,9 +50,9 @@ export default function RasLandingPage() {
 
       <section>
         <h2 className="font-display text-xl tracking-[0.16em] text-safe">{t("land.download")}</h2>
-        <div className="mt-3 grid gap-3 md:grid-cols-3">
+        <div className="mt-3 grid gap-3 md:grid-cols-2">
           {downloads.map((item) => (
-            <a key={item.title} href={RELEASES} className="flex min-h-24 flex-col justify-center border border-anchor bg-red-950/40 px-4 py-4 text-center hover:bg-red-900/50">
+            <a key={item.title} href={item.href} className="flex min-h-24 flex-col justify-center border border-anchor bg-red-950/40 px-4 py-4 text-center hover:bg-red-900/50">
               <span className="font-display text-2xl tracking-[0.12em] text-white">{item.title}</span>
               <span className="mt-1 font-mono text-xs text-slate-300">{item.note}</span>
             </a>
