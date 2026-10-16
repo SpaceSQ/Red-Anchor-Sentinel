@@ -1,0 +1,47 @@
+name: android-apk
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag that receives the APK
+        required: true
+        default: v9.1.4
+
+permissions:
+  contents: write
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - run: npm ci
+        working-directory: mobile
+      - run: npx expo prebuild --platform android --no-install
+        working-directory: mobile
+      - name: Build the companion APK
+        working-directory: mobile/android
+        run: chmod +x ./gradlew && ./gradlew assembleRelease --no-daemon
+      - name: Attach the APK to the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          ver="${TAG#v}"
+          apk="Red.Anchor.Sentinel_${ver}_android.apk"
+          mv app/build/outputs/apk/release/app-release.apk "$apk"
+          gh release upload "$TAG" "$apk" --clobber
+        working-directory: mobile/android
